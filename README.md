@@ -1,5 +1,7 @@
 # 📄 dsh-docling
 
+[English](README.md) | [中文](README.zh-CN.md)
+
 **Native document intelligence for DeepSeek Harness.**
 **Powered by Docling.**
 
