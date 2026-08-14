@@ -29,7 +29,7 @@ function safeDebug(
 
 function appendOptions(form: FormData, options: ConvertFileInput['options']): void {
   form.append('to_formats', options.outputFormat)
-  form.append('do_ocr', String(options.ocr))
+  form.append('ocr', String(options.ocr))
   form.append('table_mode', options.tableMode)
   if (options.pageRange !== undefined) {
     form.append('page_range', String(options.pageRange[0]))
@@ -123,7 +123,7 @@ export class DoclingHttpClient implements DoclingClient {
     const startedAt = performance.now()
     const body = JSON.stringify({
       options: toSourceOptions(input.options),
-      http_sources: [{ url: input.url }]
+      sources: [{ kind: 'http', url: input.url }]
     })
     const response = await this.request('/v1/convert/source', {
       method: 'POST',
@@ -187,7 +187,7 @@ function withSignal(signal: AbortSignal | undefined): Pick<RequestInit, 'signal'
 function toSourceOptions(options: ConvertUrlInput['options']): Record<string, JsonValue> {
   return {
     to_formats: [options.outputFormat],
-    do_ocr: options.ocr,
+    ocr: options.ocr,
     table_mode: options.tableMode,
     ...options.pageRange === undefined ? {} : { page_range: [...options.pageRange] }
   }

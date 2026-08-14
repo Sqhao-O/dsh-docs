@@ -92,7 +92,7 @@ describe('Docling Serve HTTP client', () => {
       expect(request.body).toContain('# Sample\ncontent')
       expect(request.body).not.toContain('base64')
       expect(request.body).toContain('name="to_formats"')
-      expect(request.body).toContain('name="do_ocr"')
+      expect(request.body).toContain('name="ocr"')
       expect(request.body).toContain('name="table_mode"')
       expect(request.body.match(/name="page_range"/g)).toHaveLength(2)
       return { body: markdownResponse }
@@ -112,8 +112,8 @@ describe('Docling Serve HTTP client', () => {
       expect(request.headers['content-type']).toContain('application/json')
       expect(request.headers['x-api-key']).toBe('source-secret')
       expect(JSON.parse(request.body)).toEqual({
-        options: { to_formats: ['text'], do_ocr: false, table_mode: 'fast', page_range: [3, 4] },
-        http_sources: [{ url: 'https://example.com/report.pdf' }]
+        options: { to_formats: ['text'], ocr: false, table_mode: 'fast', page_range: [3, 4] },
+        sources: [{ kind: 'http', url: 'https://example.com/report.pdf' }]
       })
       return { body: JSON.stringify({ document: { text_content: 'converted' }, status: 'success' }) }
     })
