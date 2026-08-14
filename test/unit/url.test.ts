@@ -32,6 +32,9 @@ describe('remote URL security', () => {
     'http://localhost/report.pdf',
     'http://127.0.0.1/report.pdf',
     'http://[::1]/report.pdf',
+    'http://[::ffff:127.0.0.1]/report.pdf',
+    'http://[::127.0.0.1]/report.pdf',
+    'http://[fe90::1]/report.pdf',
     'http://10.0.0.4/report.pdf',
     'http://192.168.1.1/report.pdf',
     'http://169.254.10.3/report.pdf'
@@ -49,7 +52,20 @@ describe('remote URL security', () => {
   })
 
   it.each([
-    ['10.0.0.1', true], ['127.1.2.3', true], ['::1', true], ['fe80::1', true], ['fc00::1', true], ['93.184.216.34', false]
+    ['10.0.0.1', true],
+    ['127.1.2.3', true],
+    ['::1', true],
+    ['::ffff:127.0.0.1', true],
+    ['::ffff:7f00:1', true],
+    ['::7f00:1', true],
+    ['fe80::1', true],
+    ['fe90::1', true],
+    ['fea0::1', true],
+    ['febf::1', true],
+    ['fc00::1', true],
+    ['ff02::1', true],
+    ['2606:4700::1111', false],
+    ['93.184.216.34', false]
   ])('classifies %s private=%s', (address, expected) => {
     expect(isPrivateAddress(address)).toBe(expected)
   })

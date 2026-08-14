@@ -20,6 +20,40 @@ function ipv4Octets(address: string): number[] | undefined {
     : undefined
 }
 
+function ipv6Hextets(address: string): number[] | undefined {
+  const parts = address.split('::')
+  if (parts.length > 2) return undefined
+  const expand = (part: string): number[] | undefined => {
+    if (part === '') return []
+    const segments = part.split(':')
+    const hextets: number[] = []
+    for (const [index, segment] of segments.entries()) {
+      if (segment.includes('.')) {
+        if (index !== segments.length - 1) return undefined
+        const octets = ipv4Octets(segment)
+        if (octets === undefined) return undefined
+        hextets.push((octets[0]! << 8) | octets[1]!, (octets[2]! << 8) | octets[3]!)
+        continue
+      }
+      if (!/^[0-9a-f]{1,4}$/i.test(segment)) return undefined
+      hextets.push(Number.parseInt(segment, 16))
+    }
+    return hextets
+  }
+  const left = expand(parts[0]!)
+  const right = expand(parts[1] ?? '')
+  if (left === undefined || right === undefined) return undefined
+  if (parts.length === 1) return left.length === 8 ? left : undefined
+  const zeroes = 8 - left.length - right.length
+  return zeroes >= 1 ? [...left, ...Array<number>(zeroes).fill(0), ...right] : undefined
+}
+
+function ipv4FromHextets(hextets: readonly number[]): string {
+  const high = hextets[6]!
+  const low = hextets[7]!
+  return `${high >> 8}.${high & 0xff}.${low >> 8}.${low & 0xff}`
+}
+
 export function isPrivateAddress(address: string): boolean {
   const withoutBrackets = address.replace(/^\[|\]$/g, '').toLowerCase()
   const mappedIpv4 = withoutBrackets.match(/^::ffff:(\d+\.\d+\.\d+\.\d+)$/i)?.[1]
@@ -39,9 +73,16 @@ export function isPrivateAddress(address: string): boolean {
       || (first === 198 && (second === 18 || second === 19))
   }
   if (isIP(withoutBrackets) === 6) {
-    return withoutBrackets === '::' || withoutBrackets === '::1'
-      || withoutBrackets.startsWith('fe80:')
-      || /^f[cd][0-9a-f]{2}:/i.test(withoutBrackets)
+    const hextets = ipv6Hextets(withoutBrackets)
+    if (hextets === undefined) return true
+    const first = hextets[0]!
+    const ipv4Compatible = hextets.slice(0, 6).every(value => value === 0)
+    const ipv4Mapped = hextets.slice(0, 5).every(value => value === 0) && hextets[5] === 0xffff
+    if (ipv4Compatible || ipv4Mapped) return isPrivateAddress(ipv4FromHextets(hextets))
+    return (first & 0xffc0) === 0xfe80 // fe80::/10 link-local
+      || (first & 0xfe00) === 0xfc00 // fc00::/7 unique-local
+      || (first & 0xff00) === 0xff00 // ff00::/8 multicast
+      || (first === 0x2001 && hextets[1] === 0x0db8) // 2001:db8::/32 documentation
   }
   return false
 }
