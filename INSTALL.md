@@ -12,8 +12,8 @@ replace a whole YAML file just to add this plugin.
 
 Use the currently active DSH profile. If its name is not available from the
 current session or user request, ask one concise question: “Which DSH profile
-should receive dsh-docling? (`default` is the usual choice.)” Do not guess a
-different profile.
+should receive dsh-docling? (`web` is the usual choice when you run `dsh web`.)”
+Do not guess a different profile.
 
 Use the user's existing Docling Serve endpoint. If no endpoint is present in
 the profile configuration or user request, ask for its HTTP(S) base URL. Ask

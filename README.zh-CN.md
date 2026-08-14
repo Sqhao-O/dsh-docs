@@ -82,16 +82,19 @@ podman run -p 5001:5001 quay.io/docling-project/docling-serve
 
 ### 2. 手动安装 bundle
 
+以下命令面向 `dsh web` 使用的 `web` profile。若使用其他 DSH 界面，请将
+`web` 替换为对应的当前 profile 名称。
+
 从 npm 安装：
 
 ```bash
-dsh plugin --profile default add dsh-docling
+dsh plugin --profile web add dsh-docling
 ```
 
 或直接从 GitHub 安装（生产环境请固定 commit）：
 
 ```bash
-dsh plugin --profile default add github:Sqhao-O/dsh-docling
+dsh plugin --profile web add github:Sqhao-O/dsh-docling
 ```
 
 Git 安装会通过 `prepare` 编译 TypeScript。pnpm 10+ 下，DSH 可能要求你在
@@ -119,7 +122,7 @@ bundle 会添加自己的 `dsh-docling` 配置项。请在 profile 的
 无需启动界面即可验证生成的配置层：
 
 ```bash
-dsh --profile default --dump-config
+dsh --profile web --dump-config
 ```
 
 ### 4. 让 Harness 阅读文档

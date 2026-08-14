@@ -85,16 +85,19 @@ downloads models.
 
 ### 2. Install the bundle manually
 
+The commands below target the `web` profile used by `dsh web`. If you use a
+different DSH surface, replace `web` with that active profile name.
+
 From npm:
 
 ```bash
-dsh plugin --profile default add dsh-docling
+dsh plugin --profile web add dsh-docling
 ```
 
 Or directly from GitHub (pin a commit in production):
 
 ```bash
-dsh plugin --profile default add github:Sqhao-O/dsh-docling
+dsh plugin --profile web add github:Sqhao-O/dsh-docling
 ```
 
 Git installs build TypeScript through `prepare`. With pnpm 10+, DSH may ask you
@@ -122,7 +125,7 @@ The bundle adds its own `dsh-docling` row. Add or override it in the profile's
 Verify the generated layer without starting a surface:
 
 ```bash
-dsh --profile default --dump-config
+dsh --profile web --dump-config
 ```
 
 ### 4. Ask Harness to read a document
