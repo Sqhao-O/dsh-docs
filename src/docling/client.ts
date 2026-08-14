@@ -101,9 +101,7 @@ export class DoclingHttpClient implements DoclingClient {
     const startedAt = performance.now()
     const form = new FormData()
     appendOptions(form, input.options)
-    // Node's file-backed Blob streams multipart bytes from disk without first
-    // copying an entire document into a JavaScript Buffer.
-    const blob = await openAsBlob(input.file.path, { type: input.file.mediaType })
+    const blob = input.file.blob ?? await openAsBlob(input.file.path, { type: input.file.mediaType })
     form.append('files', blob, input.file.name)
     const response = await this.request('/v1/convert/file', {
       method: 'POST', body: form, ...withSignal(input.signal)

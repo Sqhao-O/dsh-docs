@@ -44,6 +44,16 @@ describe('local path sandbox', () => {
     await expect(resolveLocalFile('./report.md', [root], 1024, root)).resolves.toMatchObject({ path: file, name: 'report.md' })
   })
 
+  it('returns an immutable authorized file snapshot', async () => {
+    const { root } = await sandbox()
+    const file = join(root, 'report.md')
+    await writeFile(file, 'original')
+    const resolved = await resolveLocalFile(file, [root], 1024)
+    await writeFile(file, 'replacement')
+    expect(resolved.blob).toBeDefined()
+    await expect(resolved.blob!.text()).resolves.toBe('original')
+  })
+
   it('rejects a path outside the allowed root and a traversal escape', async () => {
     const { root, outside } = await sandbox()
     const file = join(outside, 'private.md')

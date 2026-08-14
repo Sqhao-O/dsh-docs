@@ -1,4 +1,4 @@
-import { lstat, realpath, stat } from 'node:fs/promises'
+import { lstat, open, realpath, stat } from 'node:fs/promises'
 import { basename, isAbsolute, parse, relative, resolve } from 'node:path'
 import type { LocalFile } from '../docling/types.js'
 import { DoclingError } from '../docling/errors.js'
@@ -45,7 +45,8 @@ export async function resolveLocalFile(
   let realPath: string
   try {
     realPath = await realpath(requestedPath)
-  } catch {
+  } catch (error) {
+    if (error instanceof DoclingError) throw error
     throw new DoclingError('FILE_NOT_FOUND', 'The requested document was not found.')
   }
 
@@ -54,24 +55,50 @@ export async function resolveLocalFile(
     throw new DoclingError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
   }
 
-  let details: Awaited<ReturnType<typeof lstat>>
+  let handle: Awaited<ReturnType<typeof open>> | undefined
   try {
-    details = await lstat(realPath)
-  } catch {
+    // Re-resolve immediately before opening and keep the descriptor open while
+    // reading. The returned Blob is therefore a snapshot of the authorized
+    // file, rather than a later path-based read vulnerable to replacement.
+    const currentPath = await realpath(realPath)
+    if (!roots.some(root => isWithin(root, currentPath))) {
+      throw new DoclingError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
+    }
+    const pathDetails = await lstat(currentPath)
+    if (!pathDetails.isFile()) {
+      throw new DoclingError('FILE_ACCESS_DENIED', 'The requested path must be a regular file.')
+    }
+    if (pathDetails.size > maxFileBytes) {
+      throw new DoclingError('FILE_TOO_LARGE', `The document exceeds the configured ${maxFileBytes}-byte limit.`)
+    }
+    handle = await open(currentPath, 'r')
+    const details = await handle.stat()
+    const pathAfterOpen = await realpath(currentPath)
+    if (pathAfterOpen !== currentPath || !roots.some(root => isWithin(root, pathAfterOpen))) {
+      throw new DoclingError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
+    }
+    if (!details.isFile()) {
+      throw new DoclingError('FILE_ACCESS_DENIED', 'The requested path must be a regular file.')
+    }
+    if (details.size > maxFileBytes) {
+      throw new DoclingError('FILE_TOO_LARGE', `The document exceeds the configured ${maxFileBytes}-byte limit.`)
+    }
+    const bytes = await handle.readFile()
+    if (bytes.byteLength > maxFileBytes) {
+      throw new DoclingError('FILE_TOO_LARGE', `The document exceeds the configured ${maxFileBytes}-byte limit.`)
+    }
+    return {
+      path: pathAfterOpen,
+      name: basename(pathAfterOpen),
+      size: bytes.byteLength,
+      mediaType: mediaTypeForPath(pathAfterOpen),
+      blob: new Blob([bytes], { type: mediaTypeForPath(pathAfterOpen) })
+    }
+  } catch (error) {
+    if (error instanceof DoclingError) throw error
     throw new DoclingError('FILE_NOT_FOUND', 'The requested document was not found.')
-  }
-  if (!details.isFile()) {
-    throw new DoclingError('FILE_ACCESS_DENIED', 'The requested path must be a regular file.')
-  }
-  if (details.size > maxFileBytes) {
-    throw new DoclingError('FILE_TOO_LARGE', `The document exceeds the configured ${maxFileBytes}-byte limit.`)
-  }
-
-  return {
-    path: realPath,
-    name: basename(realPath),
-    size: details.size,
-    mediaType: mediaTypeForPath(realPath)
+  } finally {
+    await handle?.close()
   }
 }
 

@@ -20,6 +20,8 @@ export interface LocalFile {
   readonly name: string
   readonly size: number
   readonly mediaType: string
+  /** Immutable bytes authorized by the local-path sandbox, when available. */
+  readonly blob?: Blob
 }
 
 export interface ConvertFileInput {

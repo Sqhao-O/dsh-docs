@@ -1,12 +1,13 @@
 import { createServer } from 'node:http'
 import { mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { once } from 'node:events'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import type { AddressInfo } from 'node:net'
 import { afterEach, describe, expect, it } from 'vitest'
 import { DoclingHttpClient } from '../../src/docling/client.js'
 import { DoclingError } from '../../src/docling/errors.js'
+import { resolveLocalFile } from '../../src/security/local-path.js'
 
 interface MockRequest {
   readonly method: string | undefined
@@ -90,6 +91,7 @@ describe('Docling Serve HTTP client', () => {
       expect(request.body).toContain('name="files"; filename="sample.md"')
       expect(request.body).toContain('Content-Type: text/markdown')
       expect(request.body).toContain('# Sample\ncontent')
+      expect(request.body).not.toContain('replacement')
       expect(request.body).not.toContain('base64')
       expect(request.body).toContain('name="to_formats"')
       expect(request.body).toContain('name="ocr"')
@@ -98,8 +100,10 @@ describe('Docling Serve HTTP client', () => {
       return { body: markdownResponse }
     })
     const file = await sampleFile()
+    const authorizedFile = await resolveLocalFile(file, [dirname(file)], 1024)
+    await writeFile(file, 'replacement')
     const result = await client(server.baseUrl).convertFile({
-      file: { path: file, name: 'sample.md', size: 16, mediaType: 'text/markdown' },
+      file: authorizedFile,
       options: { outputFormat: 'md', ocr: true, tableMode: 'accurate', pageRange: [1, 2] }
     })
     expect(result.markdown).toBe('# Report\n\nHello')
