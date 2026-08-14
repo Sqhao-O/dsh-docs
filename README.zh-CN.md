@@ -94,11 +94,13 @@ dsh plugin --profile web add dsh-docling
 或直接从 GitHub 安装（生产环境请固定 commit）：
 
 ```bash
-dsh plugin --profile web add github:Sqhao-O/dsh-docling
+dsh plugin --profile web add git+https://github.com/Sqhao-O/dsh-docling.git#main
 ```
 
-Git 安装会通过 `prepare` 编译 TypeScript。pnpm 10+ 下，DSH 可能要求你在
-profile 的 `pnpm-workspace.yaml` 中允许该可信构建。
+显式 HTTPS Git URL 不要求 GitHub SSH 访问。Git 安装会通过 `prepare` 编译
+TypeScript。pnpm 10+ 下，DSH 可能要求你在 profile 的
+`pnpm-workspace.yaml` 中允许该可信构建。生产环境应将 `#main` 固定为具体
+commit。
 
 ### 3. 配置文档访问
 

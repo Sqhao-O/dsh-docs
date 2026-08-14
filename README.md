@@ -97,11 +97,13 @@ dsh plugin --profile web add dsh-docling
 Or directly from GitHub (pin a commit in production):
 
 ```bash
-dsh plugin --profile web add github:Sqhao-O/dsh-docling
+dsh plugin --profile web add git+https://github.com/Sqhao-O/dsh-docling.git#main
 ```
 
-Git installs build TypeScript through `prepare`. With pnpm 10+, DSH may ask you
-to allow that trusted build in the profile's `pnpm-workspace.yaml`.
+This explicit HTTPS Git URL avoids requiring GitHub SSH access. Git installs
+build TypeScript through `prepare`. With pnpm 10+, DSH may ask you to allow
+that trusted build in the profile's `pnpm-workspace.yaml`. Pin a commit instead
+of `#main` for production deployments.
 
 ### 3. Configure document access
 

@@ -29,8 +29,11 @@ access by default.
 Run this command, replacing `<profile>` with the chosen DSH profile:
 
 ```bash
-dsh plugin --profile <profile> add github:Sqhao-O/dsh-docling
+dsh plugin --profile <profile> add git+https://github.com/Sqhao-O/dsh-docling.git#main
 ```
+
+The explicit HTTPS Git URL avoids requiring GitHub SSH access. Pin a commit
+instead of `#main` for production deployments.
 
 If DSH asks to allow the package's trusted `prepare` build, explain that it
 compiles this repository's TypeScript to `lib/` and ask the user for approval.
