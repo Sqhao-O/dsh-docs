@@ -1,246 +1,185 @@
-# 📄 dsh-docling
+# dsh-docling
 
-[English](README.md) | [中文](README.zh-CN.md)
+[中文](README.zh-CN.md) | [Installation prompt](INSTALL.md)
 
-**Native document intelligence for DeepSeek Harness.**
-**Powered by Docling.**
+`dsh-docling` is a local document engine for DeepSeek Harness. It no longer
+starts, calls, or requires Docling Serve, Docker, a localhost HTTP port, or a
+remote document-conversion service. The package name and existing
+`docling_*` tool names are retained for profile compatibility.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![CI](https://img.shields.io/badge/CI-GitHub%20Actions-2088FF)](.github/workflows/ci.yml)
-[![DeepSeek Harness](https://img.shields.io/badge/DeepSeek%20Harness-plugin-4b6bfb)](https://github.com/deepseek-ai/deepseek-harness)
-[![Docling](https://img.shields.io/badge/Docling-Serve-0b7a75)](https://github.com/docling-project/docling-serve)
-[![npm](https://img.shields.io/npm/v/dsh-docling)](https://www.npmjs.com/package/dsh-docling)
+For complete PDF/Office/OCR use, it ships a pinned, embedded Python + Xberg
+runtime recipe with offline Windows Tesseract language data. The native
+[Xberg](https://github.com/xberg-io/xberg) Node binding remains a small local
+fallback for non-OCR parsing; it never downloads OCR models.
 
-Give DeepSeek Harness the ability to understand documents.
+## Supported and tested inputs
 
-**PDF · DOCX · PPTX · XLSX · HTML · Markdown · CSV · Images**
+- PDF, DOCX, XLSX, PPTX, Markdown, HTML, CSV, and text
+- PNG, JPEG, TIFF, WebP, and scanned PDFs through local OCR
+- Markdown, plain text, or JSON-shaped Tool Results
 
-Turn PDFs, Office documents and scanned files into structured context DeepSeek
-Harness can reason over.
+The integration suite generates binary documents outside the repository and
+verifies PDF, DOCX, XLSX, PPTX, PNG OCR, and scanned-PDF OCR. Test any other
+Xberg-supported input against your own corpus before enabling it in production.
 
-## Install in one message
+## Quick start with `dsh web`
 
-### Hand this to your DSH agent
+Build the offline Python runtime first:
 
-> Install and configure dsh-docling for this DSH profile by following [INSTALL.md](https://github.com/Sqhao-O/dsh-docling/blob/main/INSTALL.md). Allow only the current workspace as a local document root; use my existing Docling Serve endpoint, ask me only if its URL or API key is missing, do not download or start Docling or any container image, then verify the generated DSH configuration and report the result.
-
-The guide is written for a DSH agent and is safe to repeat. It installs only
-this DSH plugin; Docling Serve remains an operator-managed service. Once the
-agent confirms the profile is configured, restart DSH and say: `Check Docling
-health.`
-
-<details>
-<summary>Manual installation</summary>
-
-See the full manual steps in [Quick start](#quick-start).
-
-</details>
-
-## Features
-
-- PDF, DOCX, PPTX, XLSX, HTML, Markdown, CSV, and image/scanned documents
-- Docling OCR and table extraction controls
-- Local files protected by a realpath-based allowlist sandbox
-- HTTP/HTTPS document URLs with DNS-aware SSRF protection
-- Native DSH Tool Results with structured canonical values and readable renders
-- Configurable file-size, timeout, and output-size limits
-- No Python runtime, models, OCR, or parser bundled in this plugin
-
-## Architecture
-
-```text
-Document
-   ↓
-dsh-docling (TypeScript)
-   ↓ HTTP
-Docling Serve
-   ↓
-structured Markdown / text / JSON + metadata
-   ↓
-DeepSeek Harness
-   ↓
-LLM reasoning
+```powershell
+pwsh -File ./scripts/build-runtime-win32-x64.ps1
 ```
 
-## Quick start
+Then install the local plugin into the `web` profile:
 
-### 1. Start Docling Serve
-
-Install and run it with Python:
-
-```bash
-pip install "docling-serve[ui]"
-docling-serve run
+```powershell
+dsh plugin --profile web add D:/Dev/Projects/dsh-docling
 ```
 
-Or use the upstream container image:
-
-```bash
-podman run -p 5001:5001 quay.io/docling-project/docling-serve
-# Docker may be used in place of Podman.
-```
-
-The plugin only needs a reachable HTTP endpoint; it never installs Python or
-downloads models.
-
-### 2. Install the bundle manually
-
-The commands below target the `web` profile used by `dsh web`. If you use a
-different DSH surface, replace `web` with that active profile name.
-
-From npm:
-
-```bash
-dsh plugin --profile web add dsh-docling
-```
-
-Or directly from GitHub (pin a commit in production):
-
-```bash
-dsh plugin --profile web add git+https://github.com/Sqhao-O/dsh-docling.git#main
-```
-
-This explicit HTTPS Git URL avoids requiring GitHub SSH access. Git installs
-build TypeScript through `prepare`. With pnpm 10+, DSH may ask you to allow
-that trusted build in the profile's `pnpm-workspace.yaml`. Pin a commit instead
-of `#main` for production deployments.
-
-### 3. Configure document access
-
-The bundle adds its own `dsh-docling` row. Add or override it in the profile's
-`cordis.patch.yml`; use absolute, non-filesystem-root directories.
+Add a narrow absolute allowlist to the web profile's `cordis.patch.yml`:
 
 ```yaml
 - id: dsh-docling
   config:
-    baseUrl: http://127.0.0.1:5001
-    # apiKey: set-this-only-if-DOCLING_SERVE_API_KEY-is-configured
+    engine: python
+    runtimeDir: D:/Dev/Projects/dsh-docling/.dsh-runtime/runtime-win32-x64
     allowedLocalRoots:
-      - C:/work/my-project
+      - D:/Dev/Projects/my-workspace
     maxFileBytes: 52428800
     maxOutputChars: 32000
+    # Safe here because the configured runtime carries the local language packs.
     defaultOcr: true
     defaultTableMode: accurate
     defaultOutputFormat: md
 ```
 
-Verify the generated layer without starting a surface:
-
-```bash
-dsh --profile web --dump-config
-```
-
-### 4. Ask Harness to read a document
+Restart `dsh web`, then ask it to read a local document:
 
 ```text
-Read ./docs/report.pdf and summarize the key risks.
-
-Analyze this annual report:
-https://example.com/report.pdf
-
+Read ./reports/annual-report.pdf and give me the three main risks.
 Extract the tables from ./financials.xlsx.
+Read the text from ./scanned-invoice.png.
 ```
 
-The model should normally choose `docling_extract`; it selects a file or URL
-from the source automatically.
+Only paths below `allowedLocalRoots` are readable. Relative paths resolve
+against the DSH session workspace, not the directory from which `dsh web` was
+started.
+
+## Offline embedded Python runtime (Windows x64)
+
+Build the separate runtime artifact:
+
+```powershell
+pwsh -File ./scripts/build-runtime-win32-x64.ps1
+```
+
+This creates a gitignored `.dsh-runtime/runtime-win32-x64` directory containing
+CPython 3.11.9, `xberg==1.0.14`, and pinned `eng` / `chi_sim` Tesseract data.
+Every downloaded file is SHA-256 validated; the artifact contains a manifest,
+NOTICE, and SPDX inventory. It does not alter a global Python installation.
+Run `pwsh -File ./scripts/verify-runtime-win32-x64.ps1` before pointing a
+profile at a copied runtime artifact.
+
+Point the plugin at the runtime:
+
+```yaml
+- id: dsh-docling
+  config:
+    engine: python
+    runtimeDir: D:/Dev/Projects/dsh-docling/.dsh-runtime/runtime-win32-x64
+    allowedLocalRoots:
+      - D:/Dev/Projects/my-workspace
+```
+
+The Python worker receives only a byte snapshot, display name, MIME type, and
+conversion options over stdio. It never receives a user path or URL. It runs
+offline, refuses missing OCR language packs, and disables document-derived OCR
+caching. `docling_health` reports the available OCR languages. See [the runtime
+guide](docs/runtime-win32-x64.md).
+
+### Node-only fallback
+
+Set `engine: node` only when you need PDF/Office/text parsing without the
+embedded Python runtime. Its `defaultOcr` is `false`. To enable Node OCR, set
+`tessdataPath` to a reviewed local directory containing every requested
+`<language>.traineddata` pack; missing data returns `ENGINE_OCR_UNAVAILABLE`
+instead of downloading a model. The Python runtime above is the supported
+complete offline OCR path.
 
 ## Tools
 
-| Tool | Purpose | Main parameters |
-| --- | --- | --- |
-| `docling_health` | Verify the configured service is reachable. | none |
-| `docling_convert_file` | Convert an allowed local document. Best for PDF, Word, PowerPoint, Excel, and scans. | `path`, `output_format?`, `ocr?`, `table_mode?`, `page_range?` |
-| `docling_convert_url` | Convert a public document URL. | `url`, `output_format?`, `ocr?`, `table_mode?`, `page_range?` |
-| `docling_extract` | Preferred convenience tool; detects local file vs HTTP(S) URL. | `source`, `source_type?`, `ocr?`, `table_mode?`, `page_range?` |
+| Tool | Purpose |
+| --- | --- |
+| `docling_health` | Report readiness of the selected local engine. |
+| `docling_convert_file` | Parse an allowlisted local file. |
+| `docling_extract` | Preferred local-file convenience tool. |
+| `docling_convert_url` | Compatibility stub that returns `UNSUPPORTED_URL`. |
 
-`output_format` is `md`, `text`, or `json`. `page_range` is an inclusive
-`[start, end]` pair with page numbers starting at 1.
+HTTP(S) input is detected only to reject it safely. Download a remote document
+through a reviewed workflow into an allowed local root, then parse that file.
+The plugin never forwards a URL to Xberg or Python, avoiding redirect and
+DNS-rebinding risks.
+
+`page_range` uses inclusive, one-based page numbers for Markdown and plain-text
+results. JSON output deliberately retains the complete structured document.
 
 ## Configuration
 
 | Field | Default | Meaning |
 | --- | --- | --- |
-| `baseUrl` | `http://127.0.0.1:5001` | Docling Serve base URL; HTTP(S) only. |
-| `apiKey` | unset | Sent as the upstream `X-Api-Key` header. |
-| `timeoutMs` | `120000` | Per-request HTTP deadline. |
-| `maxFileBytes` | `52428800` | File size cap before upload (50 MiB). |
-| `enableLocalFiles` | `true` | Enable path sources, still subject to `allowedLocalRoots`. |
-| `enableRemoteUrls` | `true` | Enable HTTP(S) URL sources. |
-| `allowedLocalRoots` | `[]` | Explicit directories the model may read; empty denies all files. |
-| `allowPrivateUrls` | `false` | Allow localhost/private URL targets. Use only in controlled deployments. |
-| `defaultOcr` | `true` | Default Docling OCR setting. |
-| `defaultTableMode` | `accurate` | `fast` or `accurate` table extraction. |
+| `engine` | `auto` | `node`, `python`, or `auto`; auto selects configured embedded Python, otherwise Node Xberg. |
+| `runtimeDir` | unset | Absolute embedded-runtime directory. |
+| `pythonCommand` | unset | Trusted Python executable for a managed runtime. |
+| `pythonWorkerPath` | shipped worker | Absolute Python worker override. |
+| `tessdataPath` | runtime `ocr/tessdata` | Absolute bundled Tesseract language-data directory. |
+| `ocrBackend` | `auto` | `auto` or `tesseract`; both select the pinned local Tesseract backend. |
+| `ocrLanguages` | `[eng]` | Ordered local OCR language packs. |
+| `timeoutMs` | `120000` | Per-conversion deadline. |
+| `maxFileBytes` | `52428800` | Authorized input-size cap. |
+| `allowedLocalRoots` | `[]` | Absolute non-root directories the model may read. |
+| `defaultOcr` | `false` | OCR default for images and scans; enable it only with a configured local tessdata runtime. |
+| `defaultTableMode` | `accurate` | `fast` or `accurate` PDF table behavior. |
 | `defaultOutputFormat` | `md` | `md`, `text`, or `json`. |
-| `maxOutputChars` | `32000` | Maximum parsed content returned to the model. |
-| `debug` | `false` | Log request metadata only; never logs API keys or document content. |
+| `maxOutputChars` | `32000` | Maximum result returned to the model. |
+| `debug` | `false` | Logs safe engine metadata only. |
 
-Invalid configuration fails while Cordis loads the plugin.
+Older `baseUrl`, `apiKey`, `enableRemoteUrls`, and `allowPrivateUrls` profile
+fields are accepted only for migration; they do not enable a remote engine.
 
-## Security
+## Security model
 
-`dsh-docling` treats model-provided input as untrusted.
-
-- Local paths are resolved, realpathed, and checked against each real allowed
-  root. This blocks `..` traversal and symlink escapes. Filesystem roots such
-  as `C:\` and `/` are rejected as configuration.
-- Remote documents may use only `http:` or `https:`. Localhost, loopback,
-  link-local, private LAN, shared-address, and other non-public addresses are
-  rejected before Docling sees the URL; DNS results are checked too.
-- Docling Serve performs the final download. Deploy it with outbound network
-  controls that also block private networks and metadata services: a public URL
-  can redirect or rebind after this plugin's preflight validation.
-- Files are statted before upload. Oversized files are never sent.
-- Output is bounded and reports truncation, original character count, and
-  returned character count. The limiter favors Markdown section boundaries and
-  never splits Unicode surrogate pairs.
-
-The configured Docling Serve `baseUrl` is a separate, operator-controlled trust
-boundary. It may safely be private; `allowPrivateUrls` controls only documents
-that Docling is instructed to download.
+- Paths are realpathed and checked against every configured root. Traversal,
+  symlink escapes, filesystem roots, non-files, and oversized inputs fail.
+- The authorized descriptor is read once into a snapshot before parsing, so a
+  later path replacement cannot change the parsed bytes.
+- The Node and Python engines accept bytes only. The plugin creates no listener,
+  URL fetcher, container, or external parser service.
+- OCR is Tesseract-only in this release. All requested language packs are read
+  from the configured local artifact; missing packs fail closed rather than
+  triggering a model download.
+- The descriptor opened for parsing must have the same device/inode identity as
+  the post-open allowlisted path, blocking file replacement between authorization
+  and the byte snapshot.
+- Results are bounded before becoming Tool Results. JSON is limited using the
+  same pretty representation shown to the model.
 
 ## Development
 
-Requires the Node versions supported by current DSH: Node `^22.19.0 || >=24`.
-
-```bash
+```powershell
 pnpm install
 pnpm lint
 pnpm typecheck
 pnpm test
 pnpm build
+pnpm pack --pack-destination .pack
 ```
 
-Tests include pure unit tests, an in-process HTTP mock integration suite, and a
-real Cordis + DSH `ToolRuntime` registration lifecycle test. A real Docling
-integration test is defined but runs only when a service is supplied:
+Tests create temporary documents only. They cover native Xberg, the Python
+stdio worker, local OCR data, Cordis ToolRuntime, and local DSH AgentLoop
+context injection.
 
-```bash
-DOCLING_BASE_URL=http://127.0.0.1:5001 pnpm test:integration
-```
+## Licenses
 
-On PowerShell:
-
-```powershell
-$env:DOCLING_BASE_URL = 'http://127.0.0.1:5001'
-pnpm test:integration
-```
-
-Before a release, inspect the exact npm artifact:
-
-```bash
-pnpm pack
-tar -tf dsh-docling-0.1.0.tgz
-```
-
-## Roadmap
-
-- [ ] Native generic Harness attachments when the upstream API is stable
-- [ ] Document chunk navigation
-- [ ] Opt-in document cache
-- [ ] Image and table artifacts
-
-## License and upstream projects
-
-This project is MIT licensed. DeepSeek Harness and Docling are separate MIT
-licensed upstream projects. `dsh-docling` is an independent community
-integration; it does not bundle, fork, or modify either project.
+This project is MIT. Xberg 1.0.14 is MIT. The optional Windows runtime contains
+CPython (PSF-2.0) and `tessdata_fast` language data (Apache-2.0), with exact
+sources, hashes, and notices recorded in its generated artifact.

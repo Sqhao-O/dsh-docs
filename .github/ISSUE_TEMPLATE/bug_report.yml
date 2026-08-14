@@ -16,7 +16,7 @@ body:
     id: environment
     attributes:
       label: Environment
-      description: Include Node, pnpm, DSH, and Docling Serve versions.
+      description: Include Node, pnpm, DSH, OS, Xberg runtime, and Tesseract language-pack versions.
     validations:
       required: true
   - type: textarea

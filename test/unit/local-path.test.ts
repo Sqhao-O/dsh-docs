@@ -3,7 +3,7 @@ import { join, parse, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
 import { DoclingError } from '../../src/docling/errors.js'
-import { mediaTypeForPath, resolveLocalFile } from '../../src/security/local-path.js'
+import { mediaTypeForPath, resolveLocalFile, sameFileIdentity } from '../../src/security/local-path.js'
 
 const temporaryDirectories: string[] = []
 
@@ -50,8 +50,7 @@ describe('local path sandbox', () => {
     await writeFile(file, 'original')
     const resolved = await resolveLocalFile(file, [root], 1024)
     await writeFile(file, 'replacement')
-    expect(resolved.blob).toBeDefined()
-    await expect(resolved.blob!.text()).resolves.toBe('original')
+    expect(new TextDecoder().decode(resolved.bytes)).toBe('original')
   })
 
   it('rejects a path outside the allowed root and a traversal escape', async () => {
@@ -60,6 +59,17 @@ describe('local path sandbox', () => {
     await writeFile(file, 'secret')
     expect(await codeOf(() => resolveLocalFile(file, [root], 1024))).toBe('FILE_ACCESS_DENIED')
     expect(await codeOf(() => resolveLocalFile(join(root, '..', 'outside', 'private.md'), [root], 1024))).toBe('FILE_ACCESS_DENIED')
+  })
+
+  it('rejects UNC, device, and URI inputs before filesystem resolution', async () => {
+    const { root } = await sandbox()
+    for (const unsafeInput of [
+      String.raw`\\untrusted-host\share\report.pdf`,
+      String.raw`\\?\C:\Windows\report.pdf`,
+      'file:///C:/Windows/report.pdf'
+    ]) {
+      expect(await codeOf(() => resolveLocalFile(unsafeInput, [root], 1024))).toBe('FILE_ACCESS_DENIED')
+    }
   })
 
   it('rejects a symlink that escapes the allowed root', async () => {
@@ -78,6 +88,14 @@ describe('local path sandbox', () => {
     await writeFile(privateFile, 'secret')
     await symlink(parse(root).root, rootLink, process.platform === 'win32' ? 'junction' : 'dir')
     expect(await codeOf(() => resolveLocalFile(privateFile, [rootLink], 1024))).toBe('FILE_ACCESS_DENIED')
+  })
+
+  it('requires the opened descriptor identity to match the post-open path', () => {
+    expect(sameFileIdentity({ dev: 7, ino: 11 }, { dev: 7, ino: 11 })).toBe(true)
+    // This models an outside target opened during a path replacement race,
+    // followed by a swap back to an allowlisted file before post-open checks.
+    expect(sameFileIdentity({ dev: 7, ino: 11 }, { dev: 7, ino: 12 })).toBe(false)
+    expect(sameFileIdentity({ dev: 7, ino: 11 }, { dev: 8, ino: 11 })).toBe(false)
   })
 
   it('reports missing files, directories, over-limit files, and an empty allowlist safely', async () => {

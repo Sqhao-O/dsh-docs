@@ -1,3 +1,3 @@
 # Sample document
 
-This small fixture exercises a real Docling Serve instance when `DOCLING_BASE_URL` is configured.
+This small fixture exercises the local Xberg document engine.

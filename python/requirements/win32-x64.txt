@@ -1,0 +1,6 @@
+# This lock targets the embedded CPython runtime distributed for Windows x64.
+# Build / bootstrap with `pip install --require-hashes -r ...` against a vetted
+# wheelhouse.  Other OS/CPU runtime packages must carry their own lock because
+# Xberg publishes platform-specific native wheels.
+xberg==1.0.14 \
+    --hash=sha256:fa2d3fb15ab06d7ae91810d5d0be883ebca03a2ce6f009e3810295668a3d302f

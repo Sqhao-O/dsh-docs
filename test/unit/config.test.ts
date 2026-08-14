@@ -1,6 +1,6 @@
 import { parse, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { Config, DEFAULT_BASE_URL, DEFAULT_MAX_FILE_BYTES, DEFAULT_TIMEOUT_MS, resolveConfig } from '../../src/config.js'
+import { Config, DEFAULT_ENGINE, DEFAULT_MAX_FILE_BYTES, DEFAULT_MAX_OUTPUT_CHARS, DEFAULT_TIMEOUT_MS, resolveConfig } from '../../src/config.js'
 import type { Config as PluginConfig } from '../../src/config.js'
 
 function schemaInput(values: Record<string, unknown>): PluginConfig {
@@ -8,31 +8,43 @@ function schemaInput(values: Record<string, unknown>): PluginConfig {
 }
 
 describe('plugin configuration', () => {
-  it('applies documented defaults through Schemastery', () => {
+  it('applies local-engine defaults through Schemastery', () => {
     const config = new Config(schemaInput({}))
-    expect(config.baseUrl).toBe(DEFAULT_BASE_URL)
+    expect(config.engine).toBe(DEFAULT_ENGINE)
     expect(config.timeoutMs).toBe(DEFAULT_TIMEOUT_MS)
     expect(config.maxFileBytes).toBe(DEFAULT_MAX_FILE_BYTES)
+    expect(config.maxOutputChars).toBe(DEFAULT_MAX_OUTPUT_CHARS)
+    expect(config.ocrLanguages).toEqual(['eng'])
+    expect(config.enableRemoteUrls).toBe(false)
     expect(config.allowedLocalRoots).toEqual([])
+    expect(config.defaultOcr).toBe(false)
     expect(config.defaultTableMode).toBe('accurate')
   })
 
   it.each([
-    ['invalid base URL', { baseUrl: 'not-a-url' }],
-    ['unsupported base URL protocol', { baseUrl: 'ftp://example.com' }],
-    ['credential-bearing base URL', { baseUrl: 'https://user:secret@example.com' }],
-    ['query-bearing base URL', { baseUrl: 'https://docling.example.test/?unexpected=true' }],
-    ['fragment-bearing base URL', { baseUrl: 'https://docling.example.test/#unexpected' }],
     ['filesystem root as allowed root', { allowedLocalRoots: [parse(process.cwd()).root] }],
-    ['normalized filesystem root as allowed root', { allowedLocalRoots: [`${parse(process.cwd()).root}workspace${sep}..`] }]
+    ['normalized filesystem root as allowed root', { allowedLocalRoots: [`${parse(process.cwd()).root}workspace${sep}..`] }],
+    ['filesystem root as runtime directory', { runtimeDir: parse(process.cwd()).root }],
+    ['filesystem root as tessdata directory', { tessdataPath: parse(process.cwd()).root }],
+    ['relative Python worker path', { pythonWorkerPath: 'python/worker.py' }]
   ])('rejects %s during semantic configuration resolution', (_label, values) => {
     expect(() => resolveConfig(new Config(schemaInput(values)))).toThrow()
   })
 
   it.each([
+    ['invalid engine', { engine: 'remote' }],
     ['timeout below the lower bound', { timeoutMs: 999 }],
-    ['max file size below the lower bound', { maxFileBytes: 0 }]
+    ['max file size below the lower bound', { maxFileBytes: 0 }],
+    ['empty OCR language', { ocrLanguages: [''] }],
+    ['downloadable Paddle OCR backend', { ocrBackend: 'paddleocr' }]
   ])('rejects %s in its schema', (_label, values) => {
     expect(() => new Config(schemaInput(values))).toThrow()
+  })
+
+  it.each([
+    ['no OCR languages', { ocrLanguages: [] }],
+    ['unsafe OCR language path', { ocrLanguages: ['../eng'] }]
+  ])('rejects %s during semantic configuration resolution', (_label, values) => {
+    expect(() => resolveConfig(new Config(schemaInput(values)))).toThrow()
   })
 })

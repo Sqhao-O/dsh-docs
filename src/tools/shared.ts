@@ -1,7 +1,8 @@
 import { HarnessError } from '@deepseek-ai/dsh-llm'
 import type { Config } from '../config.js'
 import { DoclingError, isDoclingError } from '../docling/errors.js'
-import type { ConvertOptions } from '../docling/types.js'
+import { isDocumentEngineError } from '../engine/errors.js'
+import type { ConvertOptions } from '../engine/types.js'
 
 export interface ConversionArgs {
   readonly output_format?: string
@@ -44,6 +45,7 @@ export function convertOptions(args: ConversionArgs, config: Config): ConvertOpt
 
 export function asHarnessError(error: unknown): never {
   if (isDoclingError(error)) throw new HarnessError(error.message, error.code)
+  if (isDocumentEngineError(error)) throw new HarnessError(error.message, error.code)
   throw error
 }
 
@@ -62,7 +64,7 @@ export const CONVERSION_PARAMETERS = {
   page_range: {
     type: 'array' as const,
     items: { type: 'integer' as const },
-    description: 'Optional inclusive [start, end] page range; page numbering starts at 1.'
+    description: 'Optional inclusive [start, end] page range; page numbering starts at 1. Applies to md and text output; json retains the complete structured document.'
   }
 } as const
 

@@ -32,3 +32,24 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
       - run: pnpm build
+
+  windows-offline-ocr:
+    name: Windows offline Python/OCR runtime
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 24.x
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pwsh -NoProfile -File .\scripts\build-runtime-win32-x64.ps1
+      - run: pwsh -NoProfile -File .\scripts\verify-runtime-win32-x64.ps1
+      - run: pnpm test:integration
+        env:
+          DSH_DOC_TEST_PYTHON: ${{ github.workspace }}/.dsh-runtime/runtime-win32-x64/python/python.exe
+          DSH_DOC_TEST_WORKER: ${{ github.workspace }}/.dsh-runtime/runtime-win32-x64/python/worker.py
+          DSH_DOC_TEST_TESSDATA: ${{ github.workspace }}/.dsh-runtime/runtime-win32-x64/ocr/tessdata
+      - run: pnpm build

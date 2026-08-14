@@ -1,0 +1,6 @@
+.dsh-test/
+.dsh-runtime/
+.pack/
+coverage/
+python/__pycache__/
+*.py[cod]

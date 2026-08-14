@@ -1,10 +1,11 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import type { DoclingClient } from '../docling/types.js'
+import type { DocumentEngine } from '../engine/types.js'
+import { asHarnessError } from './shared.js'
 
-export function createHealthTool(client: DoclingClient) {
+export function createHealthTool(engine: DocumentEngine) {
   return defineTool({
     name: 'docling_health',
-    description: 'Check whether the configured Docling Serve instance is reachable and ready.',
+    description: 'Check whether the local document parsing engine is ready.',
     parameters: {},
     output: {
       schema: {
@@ -12,16 +13,25 @@ export function createHealthTool(client: DoclingClient) {
         additionalProperties: false,
         properties: {
           status: { type: 'string' as const, required: true },
-          baseUrl: { type: 'string' as const, required: true },
+          engine: { type: 'string' as const },
+          runtimeVersion: { type: 'string' as const },
+          ocrAvailable: { type: 'boolean' as const },
+          ocrLanguages: { type: 'array' as const, items: { type: 'string' as const } },
           latencyMs: { type: 'integer' as const, required: true }
         }
       },
       render: (_args, value) => [{
         type: 'text' as const,
-        text: `Docling status: ${value.status}\nBase URL: ${value.baseUrl}\nLatency: ${value.latencyMs} ms`
+        text: `Local document engine: ${value.engine ?? 'unknown'}\nStatus: ${value.status}\nRuntime: ${value.runtimeVersion ?? 'unknown'}\nOCR: ${value.ocrAvailable === true ? `ready (${value.ocrLanguages?.join(', ') ?? 'local packs'})` : value.ocrAvailable === false ? 'unavailable' : 'not reported'}\nLatency: ${value.latencyMs} ms`
       }]
     },
-    execute: (_args, exec) => client.health(exec.signal),
-    presentCall: () => ({ card: 'generic', title: 'Check Docling health', kind: 'read' })
+    async execute(_args, exec) {
+      try {
+        return await engine.health(exec.signal)
+      } catch (error) {
+        return asHarnessError(error)
+      }
+    },
+    presentCall: () => ({ card: 'generic', title: 'Check local document engine', kind: 'read' })
   })
 }

@@ -4,7 +4,10 @@ coverage/
 *.tgz
 .pack/
 .dsh-test/
+.dsh-runtime/
 .docling-pull*.log
 .env
 .upstream-dsh/
 .upstream-docling-serve/
+__pycache__/
+*.py[cod]

@@ -1,14 +1,11 @@
-import { once } from 'node:events'
 import { existsSync } from 'node:fs'
-import { createServer } from 'node:http'
-import type { AddressInfo } from 'node:net'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import * as DoclingPlugin from '../../src/index.js'
 import type { Config } from '../../src/config.js'
+import { generateDocumentFixtures } from '../helpers/document-fixtures.js'
 
-const sentinel = 'DSH-DOCLING-CONTEXT-SENTINEL-7F3D'
 const dshRuntimeRoot = process.env.DSH_RUNTIME_ROOT
   ?? (process.env.APPDATA === undefined
     ? undefined
@@ -34,31 +31,6 @@ function rawConfig(values: Record<string, unknown>): Config {
 function dshModule(name: string): string {
   if (dshPackagesRoot === undefined) throw new Error('DSH runtime root is unavailable')
   return pathToFileURL(join(dshPackagesRoot, name, 'lib', 'index.js')).href
-}
-
-async function startMockDocling(): Promise<{ baseUrl: string, close(): Promise<void> }> {
-  const server = createServer(async (request, response) => {
-    const ended = once(request, 'end')
-    request.resume()
-    await ended
-    if (request.url === '/health') {
-      response.writeHead(200, { 'content-type': 'application/json' })
-      response.end(JSON.stringify({ status: 'healthy' }))
-      return
-    }
-    response.writeHead(200, { 'content-type': 'application/json' })
-    response.end(JSON.stringify({
-      document: { md_content: `# Parsed document\n\nUnique marker: ${sentinel}` },
-      status: 'success'
-    }))
-  })
-  server.listen(0, '127.0.0.1')
-  await once(server, 'listening')
-  const address = server.address() as AddressInfo
-  return {
-    baseUrl: `http://127.0.0.1:${address.port}`,
-    close: async () => { server.close(); await once(server, 'close') }
-  }
 }
 
 function textResponse(text: string): object[] {
@@ -123,8 +95,9 @@ describe('locally installed DSH AgentLoop context injection', () => {
     const ToolRuntime = tools.default
     const AgentRegistry = agentRegistry.default
     const AgentLoop = agentLoop.default
-    const document = join(process.cwd(), 'test', 'fixtures', 'sample.md')
-    const server = await startMockDocling()
+    const fixtures = await generateDocumentFixtures()
+    const document = fixtures.file('pdf')
+    const sentinel = fixtures.sentinels.pdf ?? (() => { throw new Error('Generated PDF fixture did not declare its sentinel') })()
     let sawToolResult = false
 
     class SentinelCheckingAdapter extends LlmAdapter {
@@ -163,8 +136,9 @@ describe('locally installed DSH AgentLoop context injection', () => {
       await ctx.plugin(AgentRegistry)
       await ctx.plugin(AgentLoop, { agents: [] })
       await ctx.plugin(DoclingPlugin, rawConfig({
-        baseUrl: server.baseUrl,
-        allowedLocalRoots: [join(process.cwd(), 'test', 'fixtures')],
+        engine: 'node',
+        allowedLocalRoots: [fixtures.directory],
+        defaultOcr: false,
         maxOutputChars: 4_096
       }))
 
@@ -181,7 +155,7 @@ describe('locally installed DSH AgentLoop context injection', () => {
       expect(adapter.requests).toHaveLength(2)
       expect(sawToolResult).toBe(true)
     } finally {
-      await server.close()
+      await fixtures.dispose()
     }
-  })
+  }, 120_000)
 })

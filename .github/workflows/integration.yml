@@ -1,12 +1,7 @@
-name: Docling integration
+name: Local integration
 
 on:
   workflow_dispatch:
-    inputs:
-      docling_base_url:
-        description: Reachable Docling Serve base URL
-        required: true
-        type: string
 
 permissions:
   contents: read
@@ -28,6 +23,3 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm test:integration
-        env:
-          DOCLING_BASE_URL: ${{ inputs.docling_base_url }}
-          DOCLING_API_KEY: ${{ secrets.DOCLING_API_KEY }}

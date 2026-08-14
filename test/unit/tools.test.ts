@@ -3,8 +3,9 @@ import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { JsonValue, ToolRunContext } from '@deepseek-ai/dsh-tools'
-import { DEFAULT_BASE_URL, type Config } from '../../src/config.js'
-import type { ConversionResult, ConvertFileInput, ConvertUrlInput, DoclingClient, HealthResult } from '../../src/docling/types.js'
+import type { Config } from '../../src/config.js'
+import { documentEngineError } from '../../src/engine/errors.js'
+import type { ConversionResult, ConvertFileInput, DocumentEngine, HealthResult } from '../../src/engine/types.js'
 import { createConvertFileTool } from '../../src/tools/convert-file.js'
 import { createConvertUrlTool } from '../../src/tools/convert-url.js'
 import { createExtractTool } from '../../src/tools/extract.js'
@@ -20,41 +21,37 @@ const result: ConversionResult = {
   stats: { outputChars: 17, returnedChars: 17, truncated: false, elapsedMs: 10 }
 }
 
-class FakeDoclingClient implements DoclingClient {
+class FakeDocumentEngine implements DocumentEngine {
   fileInput?: ConvertFileInput
-  urlInput?: ConvertUrlInput
 
   async health(): Promise<HealthResult> {
-    return { status: 'ok', baseUrl: DEFAULT_BASE_URL, latencyMs: 4 }
+    return { status: 'ready', engine: 'fake', runtimeVersion: 'test', latencyMs: 4 }
   }
 
   async convertFile(input: ConvertFileInput): Promise<ConversionResult> {
     this.fileInput = input
     return result
   }
-
-  async convertUrl(input: ConvertUrlInput): Promise<ConversionResult> {
-    this.urlInput = input
-    return { ...result, source: { kind: 'url', url: input.url } }
-  }
 }
 
 function config(root: string, overrides: Partial<Config> = {}): Config {
-  return {
-    baseUrl: DEFAULT_BASE_URL,
+  const baseline: Config = {
+    engine: 'node',
+    ocrBackend: 'auto',
+    ocrLanguages: ['eng'],
     timeoutMs: 120_000,
     maxFileBytes: 1_000_000,
     enableLocalFiles: true,
-    enableRemoteUrls: true,
+    enableRemoteUrls: false,
     allowedLocalRoots: [root],
-    allowPrivateUrls: true,
+    allowPrivateUrls: false,
     defaultOcr: true,
     defaultTableMode: 'accurate',
     defaultOutputFormat: 'md',
     maxOutputChars: 32_000,
-    debug: false,
-    ...overrides
+    debug: false
   }
+  return Object.assign({}, baseline, overrides) as Config
 }
 
 async function fixture(): Promise<{ root: string, file: string }> {
@@ -72,46 +69,71 @@ afterEach(async () => {
 })
 
 describe('DSH tool definitions', () => {
-  it('executes and renders docling_health', async () => {
-    const tool = createHealthTool(new FakeDoclingClient())
+  it('executes and renders the local engine health tool', async () => {
+    const tool = createHealthTool(new FakeDocumentEngine())
     const value = await tool.execute({}, execution)
-    expect(tool.output.render({}, value as JsonValue)[0]).toMatchObject({ text: expect.stringContaining('Docling status: ok') })
+    expect(tool.output.render({}, value as JsonValue)[0]).toMatchObject({ text: expect.stringContaining('Local document engine: fake') })
   })
 
-  it('validates a local path then delegates conversion with model options', async () => {
+  it('renders a healthy engine even when optional implementation metadata is absent', async () => {
+    const tool = createHealthTool({
+      health: async () => ({ status: 'ready', latencyMs: 1 }),
+      convertFile: async () => result
+    })
+    const value = await tool.execute({}, execution)
+    expect(tool.output.render({}, value as JsonValue)[0]).toMatchObject({ text: expect.stringContaining('Runtime: unknown') })
+  })
+
+  it('reports offline OCR availability and preserves engine error codes from health', async () => {
+    const unavailableOcr = createHealthTool({
+      health: async () => ({ status: 'ready', latencyMs: 1, ocrAvailable: false, ocrLanguages: [] }),
+      convertFile: async () => result
+    })
+    const value = await unavailableOcr.execute({}, execution)
+    expect(unavailableOcr.output.render({}, value as JsonValue)[0]).toMatchObject({ text: expect.stringContaining('OCR: unavailable') })
+
+    const failedHealth = createHealthTool({
+      health: async () => { throw documentEngineError('ENGINE_OCR_UNAVAILABLE') },
+      convertFile: async () => result
+    })
+    await expect(failedHealth.execute({}, execution)).rejects.toMatchObject({ code: 'ENGINE_OCR_UNAVAILABLE' })
+  })
+
+  it('validates a local path then delegates its byte snapshot with model options', async () => {
     const { root, file } = await fixture()
-    const client = new FakeDoclingClient()
-    const tool = createConvertFileTool(client, config(root))
+    const engine = new FakeDocumentEngine()
+    const tool = createConvertFileTool(engine, config(root))
     const value = await tool.execute({ path: file, ocr: false, table_mode: 'fast', page_range: [2, 3] }, execution)
-    expect(client.fileInput).toMatchObject({ file: { name: 'report.md' }, options: { outputFormat: 'md', ocr: false, tableMode: 'fast', pageRange: [2, 3] } })
+    expect(engine.fileInput).toMatchObject({
+      file: { name: 'report.md', bytes: expect.any(Uint8Array) },
+      options: { outputFormat: 'md', ocr: false, tableMode: 'fast', pageRange: [2, 3] }
+    })
     expect(tool.output.render({ path: file }, value as JsonValue)[0]).toMatchObject({ text: expect.stringContaining('Document: report.pdf') })
   })
 
-  it('routes URLs and auto-detected sources through the URL client', async () => {
-    const { root } = await fixture()
-    const client = new FakeDoclingClient()
-    const urlTool = createConvertUrlTool(client, config(root))
-    await urlTool.execute({ url: 'http://127.0.0.1/report.pdf' }, execution)
-    expect(client.urlInput?.url).toBe('http://127.0.0.1/report.pdf')
-    const extractTool = createExtractTool(client, config(root))
-    await extractTool.execute({ source: 'https://example.com/report.pdf' }, execution)
-    expect(client.urlInput?.url).toBe('https://example.com/report.pdf')
-  })
-
-  it('routes a forced file source through the local file client', async () => {
+  it('routes a forced file source through the local engine', async () => {
     const { root, file } = await fixture()
-    const client = new FakeDoclingClient()
-    const tool = createExtractTool(client, config(root))
+    const engine = new FakeDocumentEngine()
+    const tool = createExtractTool(engine, config(root))
     await tool.execute({ source: file, source_type: 'file' }, execution)
-    expect(client.fileInput?.file.name).toBe('report.md')
+    expect(engine.fileInput?.file.name).toBe('report.md')
   })
 
-  it('maps invalid page ranges and disabled capabilities into stable Harness errors', async () => {
+  it('rejects remote URLs without passing them to an engine', async () => {
+    const urlTool = createConvertUrlTool()
+    await expect(urlTool.execute({ url: 'https://example.com/report.pdf' }, execution)).rejects.toMatchObject({ code: 'UNSUPPORTED_URL' })
+
+    const { root } = await fixture()
+    const extractTool = createExtractTool(new FakeDocumentEngine(), config(root))
+    await expect(extractTool.execute({ source: 'https://example.com/report.pdf' }, execution)).rejects.toMatchObject({ code: 'UNSUPPORTED_URL' })
+  })
+
+  it('maps invalid page ranges and disabled local access into stable Harness errors', async () => {
     const { root, file } = await fixture()
-    const client = new FakeDoclingClient()
-    const fileTool = createConvertFileTool(client, config(root))
+    const engine = new FakeDocumentEngine()
+    const fileTool = createConvertFileTool(engine, config(root))
     await expect(fileTool.execute({ path: file, page_range: [3, 2] }, execution)).rejects.toMatchObject({ code: 'DOCLING_BAD_REQUEST' })
-    const disabledTool = createExtractTool(client, config(root, { enableRemoteUrls: false }))
-    await expect(disabledTool.execute({ source: 'https://example.com/report.pdf' }, execution)).rejects.toThrow('Remote document conversion is disabled')
+    const disabledTool = createExtractTool(engine, config(root, { enableLocalFiles: false }))
+    await expect(disabledTool.execute({ source: file }, execution)).rejects.toMatchObject({ code: 'FILE_ACCESS_DENIED' })
   })
 })

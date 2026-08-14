@@ -1,4 +1,4 @@
-import type { ConversionResult, JsonValue } from '../docling/types.js'
+import type { ConversionResult, JsonValue } from '../engine/types.js'
 
 function resultContent(result: ConversionResult): string {
   if (result.markdown !== undefined) return result.markdown
@@ -8,7 +8,7 @@ function resultContent(result: ConversionResult): string {
 }
 
 function documentLabel(result: ConversionResult): string {
-  return result.source.name ?? result.source.url ?? 'document'
+  return result.source.name
 }
 
 /** Format the bounded canonical result into concise native Tool Result text. */

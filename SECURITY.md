@@ -16,7 +16,13 @@ coordinate a fix before public disclosure.
 
 ## Deployment boundary
 
-`dsh-docling` validates model-supplied local paths and document URLs. Docling
-Serve performs the actual document retrieval, however. Operators must restrict
-Docling Serve egress from reaching private networks and cloud metadata services
-to cover redirects and DNS rebinding after the plugin's preflight validation.
+`dsh-docling` accepts only model-supplied paths below explicit local allowlist
+roots. It resolves real paths, opens a regular file, verifies the opened file
+descriptor still matches the authorized path identity, then passes a byte
+snapshot to a local engine. Paths, URLs, and network-capable source handles are
+never forwarded to Xberg or the Python worker.
+
+The plugin creates no listener and has no Docling Serve, Docker, URL-fetch, or
+remote-parser dependency. OCR only uses configured local Tesseract data;
+missing language packs fail closed rather than downloading a model. Treat the
+configured allowlist and runtime artifact as trusted deployment inputs.

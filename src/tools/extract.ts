@@ -1,27 +1,26 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import type { JsonValue } from '@deepseek-ai/dsh-tools'
 import type { Config } from '../config.js'
-import type { DoclingClient } from '../docling/types.js'
+import type { DocumentEngine } from '../engine/types.js'
 import { asConversionResult, renderConversion } from '../output/render.js'
 import { DoclingError } from '../docling/errors.js'
 import { resolveLocalFile } from '../security/local-path.js'
-import { validateRemoteUrl } from '../security/url.js'
 import { CONVERSION_OUTPUT, CONVERSION_PARAMETERS, asHarnessError, convertOptions } from './shared.js'
 
 function isHttpSource(source: string): boolean {
   return /^https?:\/\//i.test(source)
 }
 
-export function createExtractTool(client: DoclingClient, config: Config) {
+export function createExtractTool(engine: DocumentEngine, config: Config) {
   return defineTool({
     name: 'docling_extract',
-    description: 'Preferred high-level document tool. Extract structured context from an allowed local file or approved public document URL. Auto-detects http/https URLs; otherwise treats source as a local path.',
+    description: 'Preferred high-level local document tool. Extract PDF, Office, text, HTML, CSV, images, and scanned documents from an allowed local path. HTTP(S) URLs must be downloaded into an allowed local root first.',
     parameters: {
-      source: { type: 'string' as const, required: true, description: 'Local document path or public document URL.' },
+      source: { type: 'string' as const, required: true, description: 'Local document path inside allowedLocalRoots.' },
       source_type: {
         type: 'string' as const,
         enum: ['auto', 'file', 'url'],
-        description: 'Source interpretation. Defaults to auto.'
+        description: 'Source interpretation. URL is rejected by the local-only engine. Defaults to auto.'
       },
       ...CONVERSION_PARAMETERS
     },
@@ -35,17 +34,13 @@ export function createExtractTool(client: DoclingClient, config: Config) {
         const urlInput = type === 'url' || (type === 'auto' && isHttpSource(args.source))
         const options = convertOptions(args, config)
         if (urlInput) {
-          if (!config.enableRemoteUrls) {
-            throw new DoclingError('UNSUPPORTED_URL', 'Remote document conversion is disabled by configuration.')
-          }
-          const url = await validateRemoteUrl(args.source, { allowPrivateUrls: config.allowPrivateUrls })
-          return await client.convertUrl({ url: url.toString(), options, signal: exec.signal }) as unknown as JsonValue
+          throw new DoclingError('UNSUPPORTED_URL', 'Remote document URLs are not supported by the local-only engine. Download the file into allowedLocalRoots, then retry.')
         }
         if (!config.enableLocalFiles) {
           throw new DoclingError('FILE_ACCESS_DENIED', 'Local document conversion is disabled by configuration.')
         }
         const file = await resolveLocalFile(args.source, config.allowedLocalRoots, config.maxFileBytes, exec.agent?.session.header.cwd)
-        return await client.convertFile({ file, options, signal: exec.signal }) as unknown as JsonValue
+        return await engine.convertFile({ file, options, signal: exec.signal }) as unknown as JsonValue
       } catch (error) {
         return asHarnessError(error)
       }

@@ -1,64 +1,52 @@
 # Architecture
 
-## Upstream compatibility decision
-
-Research was performed against DeepSeek Harness commit
-`47f943859bef60e4160492346772ded9b24f765a` and Docling Serve commit
-`69192d178924bbae2f1733e2d7cd21ffd04259c5` (Docling Serve 1.30.0).
-
-- DSH plugins are Cordis modules exporting `name`, `inject`, `Config`, and
-  `apply`. Tool registration is `ctx.tools.register(defineTool(...))`.
-  `defineTool` validates parameters, retains a canonical JSON value, and uses
-  `output.render` for model-facing content.
-- A DSH distributable plugin is a bundle package with
-  `dsh.bundle.patch: "./cordis.patch.yml"`; the patch inserts a row whose
-  `name` is the installed package name. `dsh plugin --profile <name> add`
-  maintains the profile dependency and bundle list.
-- Current DSH durable attachments and Web UI are image-only. This release does
-  not attempt to modify Harness Core or consume an unstable arbitrary-file
-  attachment seam. Local paths and public URLs are the v0.1 source boundary.
-- Docling Serve v1 provides `GET /health`, multipart `POST /v1/convert/file`,
-  and JSON `POST /v1/convert/source`. Authentication, when enabled by
-  `DOCLING_SERVE_API_KEY`, is `X-Api-Key`.
-
 ## Runtime flow
 
 ```text
 DeepSeek Harness ToolRuntime
         |
-        +-- docling_extract / docling_convert_file / docling_convert_url
+        +-- docling_extract / docling_convert_file
                  |
-                 +-- local path sandbox OR URL SSRF policy
-                 |
-                 +-- DoclingHttpClient
+                 +-- realpath allowlist + file descriptor snapshot
                          |
-                         +-- Docling Serve v1 HTTP API
-                                 |
-                                 +-- normalized canonical result
-                                         |
-                                         +-- bounded native Tool Result render
+                         +-- DocumentEngine
+                              |-- Xberg Python worker over stdio (bundled OCR runtime)
+                              `-- Xberg Node N-API (non-OCR fallback or explicit local tessdata)
+                                      |
+                                      `-- bounded canonical Tool Result
+                                              |
+                                              `-- next model context
 ```
+
+The plugin has no Docling HTTP client, no listener, no URL downloader, no
+container lifecycle, and no dependency on a remote parser service.
 
 ## Module boundaries
 
-- `src/security` owns pre-network input authorization. It resolves both the
-  candidate path and configured roots with `realpath`, then checks containment.
-  URL validation permits only HTTP(S), rejects local/private addresses, and
-  resolves DNS once before sending a source to Docling.
-- `src/docling` owns HTTP transport, authentication, timeouts, status mapping,
-  response normalization, and output-size enforcement. It never exposes raw
-  server tracebacks to a tool.
-- `src/tools` owns DSH schemas, model descriptions, default selection, and
-  canonical-to-model rendering. Client construction is isolated from tool
-  factories to keep tests injectable.
-- `src/output` owns a Unicode-safe, Markdown-aware output limiter. JSON that
-  exceeds the cap becomes a bounded text preview, rather than invalid partial
-  JSON in the canonical result.
+- `src/security/local-path.ts` authorizes real paths, opens the regular file,
+  compares the opened descriptor identity to the post-open path, and returns a
+  byte snapshot. Parser implementations do not receive its path.
+- `src/engine/types.ts` is the engine-neutral bytes-only contract.
+- `src/engine/xberg-node-client.ts` uses Xberg's native Node binding and only
+  enables OCR with explicit pinned local Tesseract bytes.
+- `src/engine/python-stdio-client.ts` sends a versioned, size-bounded JSON
+  request to an isolated Python worker with `shell: false`.
+- `python/worker.py` accepts bytes, display metadata, and options only. Its
+  packaged runtime checks the explicit Tesseract data directory, runs offline,
+  and disables OCR-result caching.
+- `src/tools` owns DSH schemas, safe errors, and Tool Result rendering.
+- `src/output` limits the exact text representation supplied to the model.
 
-## Security posture
+## Input and network boundary
 
-The configured Docling endpoint is a deployment trust boundary and may be a
-private address. That is intentionally separate from document URL validation.
-Local documents require explicit non-root `allowedLocalRoots`; an empty list
-denies all local access. `allowPrivateUrls` is an explicit, default-off escape
-hatch for controlled internal deployments.
+The supported source boundary is an allowlisted local file. The compatibility
+URL tool returns a stable `UNSUPPORTED_URL` error. This is deliberate: passing
+a once-validated URL to Xberg or a Python worker would allow downstream DNS
+rebinding or redirects to bypass the plugin's authorization boundary.
+
+## Python runtime artifact
+
+The normal npm package remains small. `scripts/build-runtime-win32-x64.ps1`
+creates a separately deployable Windows x64 runtime under `.dsh-runtime/` with
+pinned CPython, Xberg, `eng`, and `chi_sim` data. The artifact holds a manifest,
+hashes, notices, and an SPDX inventory. See [runtime-win32-x64.md](runtime-win32-x64.md).

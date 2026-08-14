@@ -2,7 +2,7 @@ import js from '@eslint/js'
 import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
-  { ignores: ['lib/**', 'coverage/**', '.upstream-*/**'] },
+  { ignores: ['lib/**', 'coverage/**', '.upstream-*/**', '.dsh-test/**', '.dsh-runtime/**'] },
   js.configs.recommended,
   ...tseslint.configs.recommended,
   {

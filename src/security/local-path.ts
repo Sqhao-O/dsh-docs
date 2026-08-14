@@ -1,6 +1,7 @@
+import { constants, type Stats } from 'node:fs'
 import { lstat, open, realpath, stat } from 'node:fs/promises'
 import { basename, isAbsolute, parse, relative, resolve } from 'node:path'
-import type { LocalFile } from '../docling/types.js'
+import type { LocalFile } from '../engine/types.js'
 import { DoclingError } from '../docling/errors.js'
 
 function isWithin(root: string, candidate: string): boolean {
@@ -11,6 +12,19 @@ function isWithin(root: string, candidate: string): boolean {
 function isFilesystemRoot(path: string): boolean {
   const normalized = resolve(path)
   return parse(normalized).root === normalized
+}
+
+function isNetworkDeviceOrUriPath(path: string): boolean {
+  return /^(?:\\\\|\/\/|[A-Za-z][A-Za-z0-9+.-]*:\/\/)/.test(path)
+}
+
+function isLexicallyWithin(root: string, candidate: string): boolean {
+  return isWithin(resolve(root), candidate)
+}
+
+/** Compare the already-open descriptor with the currently authorized path. */
+export function sameFileIdentity(opened: Pick<Stats, 'dev' | 'ino'>, current: Pick<Stats, 'dev' | 'ino'>): boolean {
+  return opened.dev === current.dev && opened.ino === current.ino
 }
 
 async function realAllowedRoots(roots: readonly string[]): Promise<string[]> {
@@ -41,7 +55,17 @@ export async function resolveLocalFile(
   if (allowedRoots.length === 0) {
     throw new DoclingError('FILE_ACCESS_DENIED', 'Local document access requires allowedLocalRoots configuration.')
   }
+  // Do this before *any* filesystem call. A Windows UNC/device path could
+  // otherwise negotiate with an attacker-controlled SMB endpoint before the
+  // later realpath allowlist check rejects it.
+  if (isNetworkDeviceOrUriPath(inputPath)) {
+    throw new DoclingError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
+  }
   const requestedPath = resolve(workingDirectory ?? process.cwd(), inputPath)
+  if (isNetworkDeviceOrUriPath(requestedPath)
+    || !allowedRoots.some(root => !isNetworkDeviceOrUriPath(root) && isLexicallyWithin(root, requestedPath))) {
+    throw new DoclingError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
+  }
   let realPath: string
   try {
     realPath = await realpath(requestedPath)
@@ -71,14 +95,24 @@ export async function resolveLocalFile(
     if (pathDetails.size > maxFileBytes) {
       throw new DoclingError('FILE_TOO_LARGE', `The document exceeds the configured ${maxFileBytes}-byte limit.`)
     }
-    handle = await open(currentPath, 'r')
+    // O_NOFOLLOW closes the open-time symlink race on platforms that support
+    // it. Windows lacks that flag, so the descriptor identity check below is
+    // required on every platform as the authoritative post-open guard.
+    handle = await open(
+      currentPath,
+      process.platform === 'win32' ? 'r' : constants.O_RDONLY | constants.O_NOFOLLOW
+    )
     const details = await handle.stat()
+    const pathDetailsAfterOpen = await lstat(currentPath)
     const pathAfterOpen = await realpath(currentPath)
     if (pathAfterOpen !== currentPath || !roots.some(root => isWithin(root, pathAfterOpen))) {
       throw new DoclingError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
     }
-    if (!details.isFile()) {
+    if (!details.isFile() || !pathDetailsAfterOpen.isFile()) {
       throw new DoclingError('FILE_ACCESS_DENIED', 'The requested path must be a regular file.')
+    }
+    if (!sameFileIdentity(details, pathDetailsAfterOpen)) {
+      throw new DoclingError('FILE_ACCESS_DENIED', 'The requested document changed during authorization.')
     }
     if (details.size > maxFileBytes) {
       throw new DoclingError('FILE_TOO_LARGE', `The document exceeds the configured ${maxFileBytes}-byte limit.`)
@@ -92,7 +126,9 @@ export async function resolveLocalFile(
       name: basename(pathAfterOpen),
       size: bytes.byteLength,
       mediaType: mediaTypeForPath(pathAfterOpen),
-      blob: new Blob([bytes], { type: mediaTypeForPath(pathAfterOpen) })
+      // This Buffer is the completed descriptor read. Engines take their own
+      // copy before handing bytes to a native parser or subprocess.
+      bytes
     }
   } catch (error) {
     if (error instanceof DoclingError) throw error
