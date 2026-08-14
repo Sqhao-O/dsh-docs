@@ -1,0 +1,10 @@
+node_modules/
+lib/
+coverage/
+*.tgz
+.pack/
+.dsh-test/
+.docling-pull*.log
+.env
+.upstream-dsh/
+.upstream-docling-serve/
