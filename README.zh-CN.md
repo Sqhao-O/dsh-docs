@@ -17,6 +17,23 @@
 
 将 PDF、Office 文档和扫描件转换为可供 DeepSeek Harness 推理的结构化上下文。
 
+## 一句话安装
+
+### 直接交给 DSH 中的 AI
+
+> 请按照 [INSTALL.md](https://github.com/Sqhao-O/dsh-docling/blob/main/INSTALL.md) 为当前 DSH profile 安装并配置 dsh-docling：只允许当前工作目录读取本地文档；使用我已运行的 Docling Serve，如缺少服务地址或 API key 才询问我；不要下载或启动 Docling，也不要拉取任何容器镜像；最后验证生成的 DSH 配置并报告结果。
+
+该说明专为 DSH agent 编写，可以安全地重复执行。它只安装本 DSH 插件；Docling
+Serve 始终由运维者管理。agent 确认 profile 配置完成后，重启 DSH 并说：
+`检查 Docling 服务状态。`
+
+<details>
+<summary>手动安装</summary>
+
+请查看下面的[快速开始](#快速开始)。
+
+</details>
+
 ## 功能
 
 - 支持 PDF、DOCX、PPTX、XLSX、HTML、Markdown、CSV、图片和扫描件
@@ -63,7 +80,7 @@ podman run -p 5001:5001 quay.io/docling-project/docling-serve
 
 插件只需要一个可访问的 HTTP 服务端点；它不会自行安装 Python 或下载模型。
 
-### 2. 安装 bundle
+### 2. 手动安装 bundle
 
 从 npm 安装：
 

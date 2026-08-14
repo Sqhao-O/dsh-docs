@@ -18,6 +18,24 @@ Give DeepSeek Harness the ability to understand documents.
 Turn PDFs, Office documents and scanned files into structured context DeepSeek
 Harness can reason over.
 
+## Install in one message
+
+### Hand this to your DSH agent
+
+> Install and configure dsh-docling for this DSH profile by following [INSTALL.md](https://github.com/Sqhao-O/dsh-docling/blob/main/INSTALL.md). Allow only the current workspace as a local document root; use my existing Docling Serve endpoint, ask me only if its URL or API key is missing, do not download or start Docling or any container image, then verify the generated DSH configuration and report the result.
+
+The guide is written for a DSH agent and is safe to repeat. It installs only
+this DSH plugin; Docling Serve remains an operator-managed service. Once the
+agent confirms the profile is configured, restart DSH and say: `Check Docling
+health.`
+
+<details>
+<summary>Manual installation</summary>
+
+See the full manual steps in [Quick start](#quick-start).
+
+</details>
+
 ## Features
 
 - PDF, DOCX, PPTX, XLSX, HTML, Markdown, CSV, and image/scanned documents
@@ -65,7 +83,7 @@ podman run -p 5001:5001 quay.io/docling-project/docling-serve
 The plugin only needs a reachable HTTP endpoint; it never installs Python or
 downloads models.
 
-### 2. Install the bundle
+### 2. Install the bundle manually
 
 From npm:
 
