@@ -1,3 +1,4 @@
+import { parse, sep } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { Config, DEFAULT_BASE_URL, DEFAULT_MAX_FILE_BYTES, DEFAULT_TIMEOUT_MS, resolveConfig } from '../../src/config.js'
 import type { Config as PluginConfig } from '../../src/config.js'
@@ -22,7 +23,8 @@ describe('plugin configuration', () => {
     ['credential-bearing base URL', { baseUrl: 'https://user:secret@example.com' }],
     ['query-bearing base URL', { baseUrl: 'https://docling.example.test/?unexpected=true' }],
     ['fragment-bearing base URL', { baseUrl: 'https://docling.example.test/#unexpected' }],
-    ['filesystem root as allowed root', { allowedLocalRoots: ['C:\\'] }]
+    ['filesystem root as allowed root', { allowedLocalRoots: [parse(process.cwd()).root] }],
+    ['normalized filesystem root as allowed root', { allowedLocalRoots: [`${parse(process.cwd()).root}workspace${sep}..`] }]
   ])('rejects %s during semantic configuration resolution', (_label, values) => {
     expect(() => resolveConfig(new Config(schemaInput(values)))).toThrow()
   })

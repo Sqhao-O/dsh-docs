@@ -1,5 +1,5 @@
 import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
+import { join, parse, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
 import { DoclingError } from '../../src/docling/errors.js'
@@ -52,6 +52,15 @@ describe('local path sandbox', () => {
     await writeFile(privateFile, 'secret')
     await symlink(privateFile, link, 'file')
     expect(await codeOf(() => resolveLocalFile(link, [root], 1024))).toBe('FILE_ACCESS_DENIED')
+  })
+
+  it('does not allow a configured symlink to canonicalize to a filesystem root', async () => {
+    const { root, outside } = await sandbox()
+    const privateFile = join(outside, 'private.md')
+    const rootLink = join(root, 'root-link')
+    await writeFile(privateFile, 'secret')
+    await symlink(parse(root).root, rootLink, process.platform === 'win32' ? 'junction' : 'dir')
+    expect(await codeOf(() => resolveLocalFile(privateFile, [rootLink], 1024))).toBe('FILE_ACCESS_DENIED')
   })
 
   it('reports missing files, directories, over-limit files, and an empty allowlist safely', async () => {

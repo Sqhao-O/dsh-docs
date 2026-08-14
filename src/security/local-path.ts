@@ -1,5 +1,5 @@
 import { lstat, realpath, stat } from 'node:fs/promises'
-import { basename, isAbsolute, relative, resolve } from 'node:path'
+import { basename, isAbsolute, parse, relative, resolve } from 'node:path'
 import type { LocalFile } from '../docling/types.js'
 import { DoclingError } from '../docling/errors.js'
 
@@ -8,13 +8,19 @@ function isWithin(root: string, candidate: string): boolean {
   return pathFromRoot === '' || (!pathFromRoot.startsWith('..') && !isAbsolute(pathFromRoot))
 }
 
+function isFilesystemRoot(path: string): boolean {
+  const normalized = resolve(path)
+  return parse(normalized).root === normalized
+}
+
 async function realAllowedRoots(roots: readonly string[]): Promise<string[]> {
   const resolved: string[] = []
   for (const root of roots) {
     try {
       const rootStat = await stat(root)
       if (!rootStat.isDirectory()) continue
-      resolved.push(await realpath(root))
+      const realRoot = await realpath(root)
+      if (!isFilesystemRoot(realRoot)) resolved.push(realRoot)
     } catch {
       // A stale configured root grants no access. Do not leak host filesystem details.
     }

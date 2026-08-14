@@ -1,4 +1,4 @@
-import { isAbsolute, parse } from 'node:path'
+import { isAbsolute, parse, resolve } from 'node:path'
 import Schema from '@deepseek-ai/schemastery'
 import type { OutputFormat, TableMode } from './docling/types.js'
 
@@ -46,6 +46,11 @@ export interface ResolvedConfig extends Readonly<Config> {
   readonly baseUrl: string
 }
 
+function isFilesystemRoot(path: string): boolean {
+  const normalized = resolve(path)
+  return parse(normalized).root === normalized
+}
+
 /** Validate semantic constraints that cannot be expressed with Schemastery alone. */
 export function resolveConfig(config: Config): ResolvedConfig {
   let baseUrl: URL
@@ -64,7 +69,7 @@ export function resolveConfig(config: Config): ResolvedConfig {
     throw new TypeError('baseUrl must not contain a query string or fragment')
   }
   for (const root of config.allowedLocalRoots) {
-    if (!isAbsolute(root) || parse(root).root === root) {
+    if (!isAbsolute(root) || isFilesystemRoot(root)) {
       throw new TypeError('allowedLocalRoots entries must be absolute non-filesystem-root directories')
     }
   }
