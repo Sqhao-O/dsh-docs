@@ -36,6 +36,18 @@ If DSH asks to allow the package's trusted `prepare` build, explain that it
 compiles this repository's TypeScript to `lib/` and ask the user for approval.
 Do not bypass a DSH or pnpm safety prompt.
 
+When a DSH workspace sandbox blocks this exact command because the global DSH
+executable or selected profile is outside the workspace, retry only this
+command with DSH's explicit `danger-full-access` permission request. Explain
+that the wider access is needed solely to install this requested bundle into
+the selected profile. If the user declines, report the denial and stop. Do not
+use that permission to install another runtime or to download or start
+Docling.
+
+On Windows, if the `dsh` PowerShell shim fails with a
+`StandardOutputEncoding`-style error, run `dsh.cmd` for the same command. That
+is a shim issue, not evidence that DSH is absent from `PATH`.
+
 If the command fails because `dsh` is not on `PATH`, report that DSH itself is
 not available; do not install another agent runtime without the user's
 approval.
@@ -62,6 +74,10 @@ as `C:\` or `/`. If the user did not approve local document access, configure
 Do not set `allowPrivateUrls: true` unless the user explicitly requests access
 to private document URLs. A private `baseUrl` is allowed and does not require
 that setting.
+
+If the workspace sandbox blocks access to the selected profile directory,
+request the same narrowly explained `danger-full-access` permission before
+editing that one file. Do not replace the profile or change unrelated entries.
 
 ## 4. Verify without converting a document
 
