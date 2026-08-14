@@ -158,4 +158,22 @@ describe('Docling Serve HTTP client', () => {
     expect(result.stats).toMatchObject({ truncated: true, outputChars: 1_007 })
     expect(result.markdown).toContain('output was truncated')
   })
+
+  it('limits JSON using the same pretty-printed representation rendered to the model', async () => {
+    const json = { document: [{ first: 'a'.repeat(105), second: 'b'.repeat(105) }] }
+    expect(JSON.stringify(json).length).toBeLessThan(256)
+    expect(JSON.stringify(json, null, 2).length).toBeGreaterThan(256)
+    const server = await startServer(async () => ({ body: JSON.stringify({ document: { json_content: json } }) }))
+    const result = await client(server.baseUrl, { maxOutputChars: 256 }).convertUrl({
+      url: 'https://example.com/report.pdf',
+      options: { outputFormat: 'json', ocr: false, tableMode: 'fast' }
+    })
+    expect(result).toMatchObject({
+      format: 'pdf',
+      stats: { truncated: true, outputChars: JSON.stringify(json, null, 2).length }
+    })
+    expect(result.json).toBeUndefined()
+    expect(result.text).toContain('output was truncated')
+    expect(result.text?.length).toBeLessThanOrEqual(256)
+  })
 })

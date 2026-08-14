@@ -71,7 +71,7 @@ export function normalizeConversionResponse(input: {
   const json = documentJson !== undefined && isJsonValue(documentJson) ? documentJson : undefined
   const output = outputFor(document, input.outputFormat)
   const format = stringField(document, 'format') ?? input.name?.split('.').pop() ?? input.url?.split(/[?#]/)[0]?.split('.').pop() ?? 'unknown'
-  const content = output.markdown ?? output.text ?? JSON.stringify(output.json)
+  const content = output.markdown ?? output.text ?? JSON.stringify(output.json, null, 2)
   const title = inferredTitle(document, json)
   const pages = inferredPages(json)
   return {

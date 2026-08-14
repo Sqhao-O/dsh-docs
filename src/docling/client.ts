@@ -48,7 +48,7 @@ function responseError(status: number): DoclingError {
 }
 
 function bounded(result: ConversionResult, maxOutputChars: number): ConversionResult {
-  const content = result.markdown ?? result.text ?? JSON.stringify(result.json)
+  const content = result.markdown ?? result.text ?? JSON.stringify(result.json, null, 2)
   const limited = limitText(content, maxOutputChars)
   if (!limited.truncated) return result
   if (result.markdown !== undefined) {

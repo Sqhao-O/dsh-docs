@@ -24,6 +24,7 @@ describe('Docling response normalization', () => {
     expect(text.text).toBe('Revenue increased by 12%.')
     const json = normalizeConversionResponse({ raw: await fixture('docling-json.json'), kind: 'file', name: 'book.pdf', outputFormat: 'json', elapsedMs: 1 })
     expect(json.json).toMatchObject({ schema_name: 'DoclingDocument' })
+    expect(json.stats.outputChars).toBe(JSON.stringify(json.json, null, 2).length)
   })
 
   it('accepts the batch-compatible documents[0].content response shape', () => {
