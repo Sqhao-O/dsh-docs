@@ -37,6 +37,13 @@ describe('local path sandbox', () => {
     await expect(resolveLocalFile(file, [root], 1024)).resolves.toMatchObject({ name: 'report.md', size: 8, mediaType: 'text/markdown' })
   })
 
+  it('resolves relative paths against the calling workspace when supplied', async () => {
+    const { root } = await sandbox()
+    const file = join(root, 'report.md')
+    await writeFile(file, '# report')
+    await expect(resolveLocalFile('./report.md', [root], 1024, root)).resolves.toMatchObject({ path: file, name: 'report.md' })
+  })
+
   it('rejects a path outside the allowed root and a traversal escape', async () => {
     const { root, outside } = await sandbox()
     const file = join(outside, 'private.md')

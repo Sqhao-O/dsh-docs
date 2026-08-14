@@ -25,7 +25,7 @@ export function createConvertFileTool(client: DoclingClient, config: Config) {
         if (!config.enableLocalFiles) {
           throw new DoclingError('FILE_ACCESS_DENIED', 'Local document conversion is disabled by configuration.')
         }
-        const file = await resolveLocalFile(args.path, config.allowedLocalRoots, config.maxFileBytes)
+        const file = await resolveLocalFile(args.path, config.allowedLocalRoots, config.maxFileBytes, exec.agent?.session.header.cwd)
         return await client.convertFile({ file, options: convertOptions(args, config), signal: exec.signal }) as unknown as JsonValue
       } catch (error) {
         return asHarnessError(error)

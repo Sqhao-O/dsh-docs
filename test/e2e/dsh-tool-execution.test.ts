@@ -55,11 +55,12 @@ describe('DSH ToolRuntime execution', () => {
         allowPrivateUrls: true,
         maxOutputChars: 512
       }))
-      const run = (name: string, arguments_: unknown) => ctx.tools.execute({
+      const run = (name: string, arguments_: unknown, cwd?: string) => ctx.tools.execute({
         callId: CallId(`dsh-docling-${name}`),
         name,
         arguments: arguments_,
-        signal: new AbortController().signal
+        signal: new AbortController().signal,
+        ...cwd === undefined ? {} : { agent: { session: { header: { cwd } } } as never }
       })
 
       const health = await run('docling_health', {})
@@ -78,7 +79,11 @@ describe('DSH ToolRuntime execution', () => {
       expect(extractResult.isError).toBe(false)
       if (!extractResult.isError) expect(extractResult.value).toMatchObject({ source: { kind: 'file' } })
 
-      for (const result of [fileResult, urlResult, extractResult]) {
+      const relativeExtractResult = await run('docling_extract', { source: './report.md' }, directory)
+      expect(relativeExtractResult.isError).toBe(false)
+      if (!relativeExtractResult.isError) expect(relativeExtractResult.value).toMatchObject({ source: { kind: 'file', name: 'report.md' } })
+
+      for (const result of [fileResult, urlResult, extractResult, relativeExtractResult]) {
         expect(result.content).toHaveLength(1)
         expect(result.content[0]).toMatchObject({ type: 'text' })
         expect(JSON.stringify(result.content)).toContain('Parsed successfully')

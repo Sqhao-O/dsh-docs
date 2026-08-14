@@ -35,12 +35,13 @@ async function realAllowedRoots(roots: readonly string[]): Promise<string[]> {
 export async function resolveLocalFile(
   inputPath: string,
   allowedRoots: readonly string[],
-  maxFileBytes: number
+  maxFileBytes: number,
+  workingDirectory?: string
 ): Promise<LocalFile> {
   if (allowedRoots.length === 0) {
     throw new DoclingError('FILE_ACCESS_DENIED', 'Local document access requires allowedLocalRoots configuration.')
   }
-  const requestedPath = resolve(inputPath)
+  const requestedPath = resolve(workingDirectory ?? process.cwd(), inputPath)
   let realPath: string
   try {
     realPath = await realpath(requestedPath)
