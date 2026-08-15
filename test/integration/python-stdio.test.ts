@@ -118,6 +118,37 @@ describe('embedded Python Xberg stdio engine', () => {
     }
   }, 180_000)
 
+  pythonIt('keeps the native text layer of a searchable PDF when OCR is enabled', async () => {
+    const fixtures = await generateDocumentFixtures()
+    const engine = new PythonStdioClient({
+      pythonCommand: python,
+      pythonArgs: ['-I', '-s'],
+      workerPath,
+      timeoutMs: 60_000,
+      maxOutputChars: 8_192,
+      ocrLanguages: ['eng'],
+      ocrBackend: 'tesseract',
+      env: {
+        ...process.env,
+        DSH_DOCLING_TESSDATA_PATH: tessdata,
+        TESSDATA_PREFIX: tessdata,
+        XBERG_CACHE_DIR: join(fixtures.directory, 'xberg-cache'),
+        HF_HUB_OFFLINE: '1',
+        HUGGINGFACE_HUB_OFFLINE: '1'
+      }
+    })
+    try {
+      const withoutOcr = await engine.convertFile(await input(fixtures.file('pdf'), false))
+      const withOcr = await engine.convertFile(await input(fixtures.file('pdf'), true))
+      expect(withOcr.markdown).toContain(fixtures.sentinels.pdf)
+      // OCR must not replace a healthy embedded text layer with a lossy
+      // Tesseract rendering; both paths extract the same native text.
+      expect(withOcr.markdown).toBe(withoutOcr.markdown)
+    } finally {
+      await fixtures.dispose()
+    }
+  }, 180_000)
+
   pythonIt('uses only bundled Tesseract language data for image and scanned-PDF OCR', async () => {
     const fixtures = await generateDocumentFixtures()
     const cache = join(fixtures.directory, 'offline-xberg-cache')

@@ -336,9 +336,9 @@ def _build_config(options_value: object) -> tuple[dict[str, Any], int, str, tupl
             "use_cache": False,
         }
         config["ocr"] = ocr_config
-        # A user asking for OCR wants scanned PDFs handled even if Xberg sees a
-        # poor or partial native text layer.
-        config["force_ocr"] = True
+        # Deliberately no force_ocr: Xberg's default strategy only OCRs pages
+        # without a usable native text layer.  Forcing OCR would replace a
+        # perfect embedded text layer with a lossy Tesseract rendering.
     return config, timeout_ms, output_format, page_range, max_output_chars
 
 
