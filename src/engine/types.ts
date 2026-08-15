@@ -13,6 +13,8 @@ export interface ConvertOptions {
   readonly outputFormat: OutputFormat
   readonly ocr: boolean
   readonly tableMode: TableMode
+  /** Per-request OCR language override. Falls back to the engine's configured set. */
+  readonly ocrLanguages?: readonly string[]
   readonly pageRange?: readonly [number, number]
 }
 

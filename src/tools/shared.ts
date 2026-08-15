@@ -9,7 +9,11 @@ export interface ConversionArgs {
   readonly ocr?: boolean
   readonly table_mode?: string
   readonly page_range?: readonly number[]
+  readonly ocr_languages?: readonly string[]
 }
+
+const OCR_LANGUAGE_PATTERN = /^[A-Za-z0-9_+-]+$/
+const MAX_OCR_LANGUAGES = 16
 
 export function convertOptions(args: ConversionArgs, config: Config): ConvertOptions {
   let pageRange: readonly [number, number] | undefined
@@ -35,10 +39,18 @@ export function convertOptions(args: ConversionArgs, config: Config): ConvertOpt
   if (tableMode !== 'fast' && tableMode !== 'accurate') {
     throw new DoclingError('DOCLING_BAD_REQUEST', 'table_mode must be fast or accurate.')
   }
+  const ocrLanguages = args.ocr_languages
+  if (ocrLanguages !== undefined
+    && (ocrLanguages.length === 0
+      || ocrLanguages.length > MAX_OCR_LANGUAGES
+      || ocrLanguages.some(language => !OCR_LANGUAGE_PATTERN.test(language)))) {
+    throw new DoclingError('DOCLING_BAD_REQUEST', 'ocr_languages must name 1-16 bundled local language packs, for example ["eng", "chi_sim"].')
+  }
   return {
     outputFormat,
     ocr: args.ocr ?? config.defaultOcr,
     tableMode,
+    ...ocrLanguages === undefined ? {} : { ocrLanguages },
     ...pageRange === undefined ? {} : { pageRange }
   }
 }
@@ -65,6 +77,11 @@ export const CONVERSION_PARAMETERS = {
     type: 'array' as const,
     items: { type: 'integer' as const },
     description: 'Optional inclusive [start, end] page range; page numbering starts at 1. Applies to md and text output; json retains the complete structured document.'
+  },
+  ocr_languages: {
+    type: 'array' as const,
+    items: { type: 'string' as const },
+    description: 'Optional ordered OCR language packs bundled with the runtime, for example ["chi_sim", "eng"]. Defaults to the configured or bundled language set.'
   }
 } as const
 

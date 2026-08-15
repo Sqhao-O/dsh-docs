@@ -147,9 +147,10 @@ export class XbergNodeClient implements DocumentEngine {
     }
   }
 
-  /** Configured languages, or every pack bundled in the pinned tessdata directory. */
-  private async resolvedLanguages(): Promise<string[]> {
-    if (this.options.ocrLanguages !== undefined) return [...this.options.ocrLanguages]
+  /** Per-request or configured languages, or every pack bundled in the pinned tessdata directory. */
+  private async resolvedLanguages(override?: readonly string[]): Promise<string[]> {
+    const languages = override ?? this.options.ocrLanguages
+    if (languages !== undefined) return [...languages]
     const tessdataPath = this.options.tessdataPath
     if (tessdataPath === undefined) throw documentEngineError('ENGINE_OCR_UNAVAILABLE')
     let entries: string[]
@@ -165,8 +166,13 @@ export class XbergNodeClient implements DocumentEngine {
       .sort()
   }
 
-  private async ocrConfig(tableMode: ConvertFileInput['options']['tableMode']): Promise<NonNullable<ExtractionConfig['ocr']>> {
-    const languages = await this.resolvedLanguages()
+  private async ocrConfig(tableMode: ConvertFileInput['options']['tableMode'], override?: readonly string[]): Promise<NonNullable<ExtractionConfig['ocr']>> {
+    const languages = await this.resolvedLanguages(override)
+    // Per-request languages bypass the constructor invariant; pinnedTessdata
+    // joins them into a path, so reject unsafe identifiers here as well.
+    if (languages.some(language => !/^[A-Za-z0-9_+-]+$/.test(language))) {
+      throw documentEngineError('ENGINE_INVALID_INPUT')
+    }
     if (languages.length === 0) throw documentEngineError('ENGINE_OCR_UNAVAILABLE')
     const tessdataPath = this.options.tessdataPath
     if (tessdataPath === undefined) throw documentEngineError('ENGINE_OCR_UNAVAILABLE')
@@ -242,7 +248,7 @@ export class XbergNodeClient implements DocumentEngine {
     const bytes = Uint8Array.from(input.file.bytes)
     const pageRange = input.options.pageRange
     try {
-      const ocr = input.options.ocr ? await this.ocrConfig(input.options.tableMode) : undefined
+      const ocr = input.options.ocr ? await this.ocrConfig(input.options.tableMode, input.options.ocrLanguages) : undefined
       const config: ExtractionConfig = {
         outputFormat: xbergFormat(input.options.outputFormat),
         useCache: false,

@@ -243,4 +243,34 @@ describe('embedded Python Xberg stdio engine', () => {
       await fixtures.dispose()
     }
   }, 180_000)
+
+  chineseOcrIt('honors a per-request ocr_languages override', async () => {
+    const fixtures = await generateDocumentFixtures()
+    const engine = new PythonStdioClient({
+      pythonCommand: python,
+      pythonArgs: ['-I', '-s'],
+      workerPath,
+      timeoutMs: 60_000,
+      maxOutputChars: 8_192,
+      ocrLanguages: ['eng'],
+      ocrBackend: 'tesseract',
+      env: {
+        ...process.env,
+        DSH_DOCLING_TESSDATA_PATH: tessdata,
+        TESSDATA_PREFIX: tessdata,
+        XBERG_CACHE_DIR: join(fixtures.directory, 'override-languages-cache'),
+        HF_HUB_OFFLINE: '1',
+        HUGGINGFACE_HUB_OFFLINE: '1'
+      }
+    })
+    try {
+      // The client is configured eng-only; the request pins chi_sim instead.
+      const pngInput = await input(fixtures.file('chinesePng'), true)
+      const result = await engine.convertFile({ ...pngInput, options: { ...pngInput.options, ocrLanguages: ['chi_sim'] } })
+      const compact = result.markdown?.replace(/\s/g, '') ?? ''
+      expect(compact).toContain('中文')
+    } finally {
+      await fixtures.dispose()
+    }
+  }, 180_000)
 })

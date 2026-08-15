@@ -432,6 +432,7 @@ export class PythonStdioClient implements DocumentEngine {
     const startedAt = performance.now()
     const document = checkedSnapshot(input.file)
     const pageRange = checkedPageRange(input)
+    const ocrLanguages = input.options.ocrLanguages ?? this.options.ocrLanguages
     const result = await this.request({
       operation: 'convert',
       document,
@@ -439,7 +440,7 @@ export class PythonStdioClient implements DocumentEngine {
         output_format: input.options.outputFormat,
         ocr: input.options.ocr,
         table_mode: input.options.tableMode,
-        ...(this.options.ocrLanguages === undefined ? {} : { ocr_languages: [...this.options.ocrLanguages] }),
+        ...(ocrLanguages === undefined ? {} : { ocr_languages: [...ocrLanguages] }),
         ocr_backend: this.options.ocrBackend ?? 'auto',
         timeout_ms: this.options.timeoutMs,
         max_output_chars: this.maxOutputChars,

@@ -126,6 +126,18 @@ describe('PythonStdioClient protocol boundary', () => {
     expect('ocr_languages' in options).toBe(false)
   })
 
+  it('prefers per-request OCR languages over the configured set', async () => {
+    let request: Request | undefined
+    const engine = client((worker, received) => {
+      request = received
+      response(worker, received, { format: 'pdf', metadata: {}, markdown: 'ok' })
+    })
+
+    const override = input()
+    await engine.convertFile({ ...override, options: { ...override.options, ocrLanguages: ['chi_sim'] } })
+    expect(request?.options).toMatchObject({ ocr_languages: ['chi_sim'] })
+  })
+
   it('maps health, text, JSON, and bounded JSON previews from well-formed responses', async () => {
     const health = client((worker, request) => response(worker, request, {
       status: 'ready',

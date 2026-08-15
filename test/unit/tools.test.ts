@@ -111,6 +111,17 @@ describe('DSH tool definitions', () => {
     expect(tool.output.render({ path: file }, value as JsonValue)[0]).toMatchObject({ text: expect.stringContaining('Document: report.pdf') })
   })
 
+  it('passes per-request OCR languages to the engine and rejects unsafe identifiers', async () => {
+    const { root, file } = await fixture()
+    const engine = new FakeDocumentEngine()
+    const tool = createConvertFileTool(engine, config(root))
+    await tool.execute({ path: file, ocr: true, ocr_languages: ['chi_sim', 'eng'] }, execution)
+    expect(engine.fileInput?.options).toMatchObject({ ocr: true, ocrLanguages: ['chi_sim', 'eng'] })
+    await expect(tool.execute({ path: file, ocr: true, ocr_languages: [] }, execution)).rejects.toMatchObject({ code: 'DOCLING_BAD_REQUEST' })
+    await expect(tool.execute({ path: file, ocr: true, ocr_languages: ['../eng'] }, execution)).rejects.toMatchObject({ code: 'DOCLING_BAD_REQUEST' })
+    await expect(tool.execute({ path: file, ocr: true, ocr_languages: Array.from({ length: 17 }, () => 'eng') }, execution)).rejects.toMatchObject({ code: 'DOCLING_BAD_REQUEST' })
+  })
+
   it('routes a forced file source through the local engine', async () => {
     const { root, file } = await fixture()
     const engine = new FakeDocumentEngine()
