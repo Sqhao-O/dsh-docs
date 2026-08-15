@@ -1,7 +1,7 @@
 #requires -Version 7.0
 <#
 .SYNOPSIS
-Verifies every payload hash recorded in a dsh-docling Windows runtime manifest.
+Verifies every payload hash recorded in a dsh-doc Windows runtime manifest.
 
 .DESCRIPTION
 The runtime is a separately distributed binary artifact. Run this before
@@ -24,7 +24,7 @@ if (-not (Test-Path -LiteralPath $manifestPath -PathType Leaf)) {
 }
 
 $manifest = Get-Content -LiteralPath $manifestPath -Raw | ConvertFrom-Json
-if ($manifest.schemaVersion -ne 1 -or $manifest.artifact -ne 'dsh-docling-runtime-win32-x64') {
+if ($manifest.schemaVersion -ne 1 -or $manifest.artifact -ne 'dshdoc-runtime-win32-x64') {
     throw 'Unsupported runtime manifest.'
 }
 

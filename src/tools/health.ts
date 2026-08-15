@@ -4,7 +4,7 @@ import { asHarnessError } from './shared.js'
 
 export function createHealthTool(engine: DocumentEngine) {
   return defineTool({
-    name: 'docling_health',
+    name: 'dshdoc_health',
     description: 'Check whether the local document parsing engine is ready.',
     parameters: {},
     output: {

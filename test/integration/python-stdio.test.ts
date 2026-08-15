@@ -56,7 +56,7 @@ describe('embedded Python Xberg stdio engine', () => {
       ocrBackend: 'tesseract',
       env: {
         ...process.env,
-        DSH_DOCLING_TESSDATA_PATH: tessdata,
+        DSH_DOC_TESSDATA_PATH: tessdata,
         TESSDATA_PREFIX: tessdata,
         XBERG_CACHE_DIR: join(fixtures.directory, 'xberg-cache'),
         HF_HUB_OFFLINE: '1',
@@ -100,7 +100,7 @@ describe('embedded Python Xberg stdio engine', () => {
       ocrBackend: 'tesseract',
       env: {
         ...process.env,
-        DSH_DOCLING_TESSDATA_PATH: tessdata,
+        DSH_DOC_TESSDATA_PATH: tessdata,
         TESSDATA_PREFIX: tessdata,
         XBERG_CACHE_DIR: join(fixtures.directory, 'xberg-cache'),
         HF_HUB_OFFLINE: '1',
@@ -130,7 +130,7 @@ describe('embedded Python Xberg stdio engine', () => {
       ocrBackend: 'tesseract',
       env: {
         ...process.env,
-        DSH_DOCLING_TESSDATA_PATH: tessdata,
+        DSH_DOC_TESSDATA_PATH: tessdata,
         TESSDATA_PREFIX: tessdata,
         XBERG_CACHE_DIR: join(fixtures.directory, 'xberg-cache'),
         HF_HUB_OFFLINE: '1',
@@ -166,7 +166,7 @@ describe('embedded Python Xberg stdio engine', () => {
       ocrBackend: 'tesseract',
       env: {
         ...process.env,
-        DSH_DOCLING_TESSDATA_PATH: tessdata,
+        DSH_DOC_TESSDATA_PATH: tessdata,
         TESSDATA_PREFIX: tessdata,
         XBERG_CACHE_DIR: cache,
         HF_HUB_OFFLINE: '1',
@@ -198,7 +198,7 @@ describe('embedded Python Xberg stdio engine', () => {
       ocrBackend: 'tesseract',
       env: {
         ...process.env,
-        DSH_DOCLING_TESSDATA_PATH: tessdata,
+        DSH_DOC_TESSDATA_PATH: tessdata,
         TESSDATA_PREFIX: tessdata,
         XBERG_CACHE_DIR: cache,
         HF_HUB_OFFLINE: '1',
@@ -230,7 +230,7 @@ describe('embedded Python Xberg stdio engine', () => {
       ocrBackend: 'tesseract',
       env: {
         ...process.env,
-        DSH_DOCLING_TESSDATA_PATH: tessdata,
+        DSH_DOC_TESSDATA_PATH: tessdata,
         TESSDATA_PREFIX: tessdata,
         XBERG_CACHE_DIR: join(fixtures.directory, 'default-languages-cache'),
         HF_HUB_OFFLINE: '1',
@@ -261,7 +261,7 @@ describe('embedded Python Xberg stdio engine', () => {
       ocrBackend: 'tesseract',
       env: {
         ...process.env,
-        DSH_DOCLING_TESSDATA_PATH: tessdata,
+        DSH_DOC_TESSDATA_PATH: tessdata,
         TESSDATA_PREFIX: tessdata,
         XBERG_CACHE_DIR: join(fixtures.directory, 'override-languages-cache'),
         HF_HUB_OFFLINE: '1',

@@ -49,7 +49,7 @@ describe('document engine factory', () => {
   })
 
   it('discovers a packaged embedded runtime and its bundled OCR directory without using PATH', async () => {
-    const runtime = await mkdtemp(join(tmpdir(), 'dsh-docling-runtime-'))
+    const runtime = await mkdtemp(join(tmpdir(), 'dsh-doc-runtime-'))
     directories.push(runtime)
     await mkdir(join(runtime, 'python'), { recursive: true })
     await mkdir(join(runtime, 'ocr', 'tessdata'), { recursive: true })

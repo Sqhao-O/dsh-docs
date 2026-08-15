@@ -1,6 +1,6 @@
 - insert:
-    - id: dsh-docling
-      name: dsh-docling
+    - id: dsh-doc
+      name: dsh-doc
       config:
         # Set this to the directories whose documents the model may read.
         # An empty list keeps local-file conversion disabled by default.

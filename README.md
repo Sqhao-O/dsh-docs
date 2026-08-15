@@ -19,8 +19,9 @@ native Xberg Node binding serves as a lightweight non-OCR fallback on any
 platform, and every file read stays confined to folders you explicitly
 authorize.
 
-The published package, plugin id, and `docling_*` tool names keep the
-`dsh-docling` spelling so existing profiles keep working.
+The published package, plugin id, and `dshdoc_*` tool names use the `dsh-doc`
+spelling; they were renamed from the initial `dsh-docling` / `docling_*`
+release.
 
 ## One-prompt install
 
@@ -30,7 +31,7 @@ clones, builds, registers, and configures the plugin in one go. Prerequisites:
 `git`, `pnpm` ≥ 10, Node `^22.19` or `>= 24`, and PowerShell 7+ on Windows x64.
 
 ```text
-Install the dsh-docling plugin into my DSH web profile, end to end. Do every
+Install the dsh-doc plugin into my DSH web profile, end to end. Do every
 step yourself in the terminal and verify the result.
 
 1. Clone the repository (skip this step if the directory already exists):
@@ -48,7 +49,7 @@ step yourself in the terminal and verify the result.
 5. Edit <home>/.dsh/profiles/web/cordis.patch.yml. Preserve every existing
    entry and add or update this one, with <clone> and <workspace> replaced by
    absolute paths (<workspace> is my current working directory):
-   - id: dsh-docling
+   - id: dsh-doc
      config:
        engine: python
        runtimeDir: <clone>/.dsh-runtime/runtime-win32-x64
@@ -58,9 +59,9 @@ step yourself in the terminal and verify the result.
        maxOutputChars: 32000
    If you skipped step 3, use `engine: node` and `defaultOcr: false` instead
    and omit runtimeDir.
-6. Verify with `dsh --profile web --dump-config` that the composed dsh-docling
+6. Verify with `dsh --profile web --dump-config` that the composed dsh-doc
    entry carries exactly this config, then report the result and remind me to
-   restart `dsh web` so I can call docling_health.
+   restart `dsh web` so I can call dshdoc_health.
 
 Hard constraints: never install, start, or configure Docling Serve, Docker,
 containers, or any remote document-conversion service; never configure a
@@ -69,8 +70,8 @@ downloadable OCR backend or allow a model download; do not commit the clone's
 ```
 
 After the agent finishes and you restart `dsh web`, check the engine with
-`docling_health`, then parse any file below your workspace with
-`docling_extract`. [INSTALL.md](INSTALL.md) documents the same flow plus the
+`dshdoc_health`, then parse any file below your workspace with
+`dshdoc_extract`. [INSTALL.md](INSTALL.md) documents the same flow plus the
 manual procedure step by step.
 
 ## Supported and tested inputs
@@ -103,7 +104,7 @@ dsh plugin --profile web add ~/.dsh/plugins/dsh-docs
 Add a narrow absolute allowlist to the web profile's `cordis.patch.yml`:
 
 ```yaml
-- id: dsh-docling
+- id: dsh-doc
   config:
     engine: python
     runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
@@ -147,7 +148,7 @@ profile at a copied runtime artifact.
 Point the plugin at the runtime:
 
 ```yaml
-- id: dsh-docling
+- id: dsh-doc
   config:
     engine: python
     runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
@@ -158,7 +159,7 @@ Point the plugin at the runtime:
 The Python worker receives only a byte snapshot, display name, MIME type, and
 conversion options over stdio. It never receives a user path or URL. It runs
 offline, refuses missing OCR language packs, and disables document-derived OCR
-caching. `docling_health` reports the available OCR languages. See [the runtime
+caching. `dshdoc_health` reports the available OCR languages. See [the runtime
 guide](docs/runtime-win32-x64.md).
 
 ### Node-only fallback
@@ -174,10 +175,10 @@ complete offline OCR path.
 
 | Tool | Purpose |
 | --- | --- |
-| `docling_health` | Report readiness of the selected local engine. |
-| `docling_convert_file` | Parse an allowlisted local file. |
-| `docling_extract` | Preferred local-file convenience tool. |
-| `docling_convert_url` | Compatibility stub that returns `UNSUPPORTED_URL`. |
+| `dshdoc_health` | Report readiness of the selected local engine. |
+| `dshdoc_convert_file` | Parse an allowlisted local file. |
+| `dshdoc_extract` | Preferred local-file convenience tool. |
+| `dshdoc_convert_url` | Compatibility stub that returns `UNSUPPORTED_URL`. |
 
 HTTP(S) input is detected only to reject it safely. Download a remote document
 through a reviewed workflow into an allowed local root, then parse that file.

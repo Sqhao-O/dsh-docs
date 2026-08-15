@@ -5,9 +5,9 @@ coverage/
 .pack/
 .dsh-test/
 .dsh-runtime/
-.docling-pull*.log
+.dshdoc-pull*.log
 .env
 .upstream-dsh/
-.upstream-docling-serve/
+.upstream-dshdoc-serve/
 __pycache__/
 *.py[cod]

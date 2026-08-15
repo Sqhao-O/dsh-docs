@@ -9,7 +9,7 @@ It is deliberately source-only in this repository.  A normal npm package must
 not contain a CPython distribution, native DLLs, OCR language data, or model
 weights: those are platform-specific and can be hundreds of megabytes.  Ship
 them in a separately versioned platform runtime artifact, for example
-`@dsh-docling/runtime-win32-x64`, with this layout:
+`@dsh-doc/runtime-win32-x64`, with this layout:
 
 ```text
 runtime-win32-x64/
@@ -28,7 +28,7 @@ wheel verified for the Windows x64 artifact.  An installer must install from a
 vetted local wheelhouse with `--require-hashes`; it must never fetch Python
 packages or model weights on first document conversion.
 
-The runtime launcher must set `DSH_DOCLING_TESSDATA_PATH` to the packaged
+The runtime launcher must set `DSH_DOC_TESSDATA_PATH` to the packaged
 `ocr/tessdata` directory.  The worker checks every requested
 `<language>.traineddata` file before invoking Xberg and returns
 `ENGINE_OCR_UNAVAILABLE` if a pack is absent.  This intentionally prevents
@@ -63,8 +63,8 @@ engine-neutral error such as
 `{"id":...,"ok":false,"error":{"code":"ENGINE_CONVERSION_FAILED"}}`.
 Parser tracebacks and document data are never reflected in error responses.
 
-`DSH_DOCLING_WORKER_MAX_INPUT_BYTES` and
-`DSH_DOCLING_WORKER_MAX_TIMEOUT_MS` are optional hard ceilings supplied by the
+`DSH_DOC_WORKER_MAX_INPUT_BYTES` and
+`DSH_DOC_WORKER_MAX_TIMEOUT_MS` are optional hard ceilings supplied by the
 parent runtime.  The parent must still enforce its own limits before base64
 encoding, because the worker cannot undo memory already consumed by a wire
 line. `max_output_chars` is also supplied by the parent: the worker truncates

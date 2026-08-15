@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promis
 import { join, parse, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
-import { DoclingError } from '../../src/docling/errors.js'
+import { DshdocError } from '../../src/dshdoc/errors.js'
 import { mediaTypeForPath, resolveLocalFile, sameFileIdentity } from '../../src/security/local-path.js'
 
 const temporaryDirectories: string[] = []
@@ -10,7 +10,7 @@ const temporaryDirectories: string[] = []
 async function sandbox(): Promise<{ root: string, outside: string }> {
   // Canonicalize the temp root: on Windows hosts %TEMP% may use an 8.3 short
   // name (RUNNER~1) while resolveLocalFile always returns the realpath.
-  const base = await realpath(await mkdtemp(join(tmpdir(), 'dsh-docling-path-')))
+  const base = await realpath(await mkdtemp(join(tmpdir(), 'dsh-doc-path-')))
   temporaryDirectories.push(base)
   const root = join(base, 'allowed')
   const outside = join(base, 'outside')
@@ -27,7 +27,7 @@ async function codeOf(action: () => Promise<unknown>): Promise<string | undefine
     await action()
     return undefined
   } catch (error) {
-    return error instanceof DoclingError ? error.code : undefined
+    return error instanceof DshdocError ? error.code : undefined
   }
 }
 

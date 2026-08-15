@@ -16,7 +16,7 @@ coordinate a fix before public disclosure.
 
 ## Deployment boundary
 
-`dsh-docling` accepts only model-supplied paths below explicit local allowlist
+`dsh-doc` accepts only model-supplied paths below explicit local allowlist
 roots. It resolves real paths, opens a regular file, verifies the opened file
 descriptor still matches the authorized path identity, then passes a byte
 snapshot to a local engine. Paths, URLs, and network-capable source handles are

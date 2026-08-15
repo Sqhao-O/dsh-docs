@@ -1,4 +1,4 @@
-# Install dsh-docling with a DSH agent
+# Install dsh-doc with a DSH agent
 
 No local checkout is needed. Paste this prompt into a running DSH session (for
 example `dsh web`) in your own project folder — the agent clones, builds,
@@ -6,7 +6,7 @@ registers, and configures the plugin in one go. Prerequisites: `git`,
 `pnpm` ≥ 10, Node `^22.19` or `>= 24`, and PowerShell 7+ on Windows x64.
 
 ```text
-Install the dsh-docling plugin into my DSH web profile, end to end. Do every
+Install the dsh-doc plugin into my DSH web profile, end to end. Do every
 step yourself in the terminal and verify the result.
 
 1. Clone the repository (skip this step if the directory already exists):
@@ -24,7 +24,7 @@ step yourself in the terminal and verify the result.
 5. Edit <home>/.dsh/profiles/web/cordis.patch.yml. Preserve every existing
    entry and add or update this one, with <clone> and <workspace> replaced by
    absolute paths (<workspace> is my current working directory):
-   - id: dsh-docling
+   - id: dsh-doc
      config:
        engine: python
        runtimeDir: <clone>/.dsh-runtime/runtime-win32-x64
@@ -34,9 +34,9 @@ step yourself in the terminal and verify the result.
        maxOutputChars: 32000
    If you skipped step 3, use `engine: node` and `defaultOcr: false` instead
    and omit runtimeDir.
-6. Verify with `dsh --profile web --dump-config` that the composed dsh-docling
+6. Verify with `dsh --profile web --dump-config` that the composed dsh-doc
    entry carries exactly this config, then report the result and remind me to
-   restart `dsh web` so I can call docling_health.
+   restart `dsh web` so I can call dshdoc_health.
 
 Hard constraints: never install, start, or configure Docling Serve, Docker,
 containers, or any remote document-conversion service; never configure a
@@ -73,7 +73,7 @@ downloadable OCR backend or allow a model download; do not commit the clone's
    workspace with absolute paths.
 
    ```yaml
-   - id: dsh-docling
+   - id: dsh-doc
      config:
        engine: python
        runtimeDir: $HOME/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
@@ -88,8 +88,8 @@ downloadable OCR backend or allow a model download; do not commit the clone's
    profile, but DSH may rewrite its profile layer while dumping, so keep normal
    configuration under version control or make a backup first.
 
-7. Ask the Harness to run `docling_health`, then parse a file beneath the
-   configured root. `docling_extract` is the preferred tool.
+7. Ask the Harness to run `dshdoc_health`, then parse a file beneath the
+   configured root. `dshdoc_extract` is the preferred tool.
 
 ## Required offline Python runtime for OCR
 
@@ -102,7 +102,7 @@ pwsh -File ./scripts/build-runtime-win32-x64.ps1
 Then use:
 
 ```yaml
-- id: dsh-docling
+- id: dsh-doc
   config:
     engine: python
     runtimeDir: $HOME/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64

@@ -13,8 +13,8 @@ Markdown、纯文本或结构化 JSON；把扫描件或图片交给它，完全�
 即得完整的 PDF/Office/OCR 能力；原生 Xberg Node 绑定则作为任意平台上轻量的非
 OCR 解析回退。所有文件读取都被严格限制在你显式授权的目录之内。
 
-发布包名、插件 id 与 `docling_*` 工具名仍沿用 `dsh-docling` 拼写，以保证既有
-profile 继续可用。
+发布包名、插件 id 与 `dshdoc_*` 工具名统一采用 `dsh-doc` / `dshdoc` 拼写，
+由初版的 `dsh-docling` / `docling_*` 更名而来。
 
 ## 一段提示词完成安装
 
@@ -24,7 +24,7 @@ DSH 会话（例如 `dsh web`）里，Harness 代理会一次性完成克隆、�
 PowerShell 7+。
 
 ```text
-请把 dsh-docling 插件端到端安装到我的 DSH web profile，所有步骤由你在终端里
+请把 dsh-doc 插件端到端安装到我的 DSH web profile，所有步骤由你在终端里
 完成并验证结果。
 
 1. 克隆仓库（目录已存在则跳过此步）：
@@ -40,7 +40,7 @@ PowerShell 7+。
 5. 编辑 <home>/.dsh/profiles/web/cordis.patch.yml：保留已有的全部条目，新增或
    更新下面这一条，把 <clone> 和 <workspace> 替换为绝对路径（<workspace> 是我
    当前的工作目录）：
-   - id: dsh-docling
+   - id: dsh-doc
      config:
        engine: python
        runtimeDir: <clone>/.dsh-runtime/runtime-win32-x64
@@ -49,16 +49,16 @@ PowerShell 7+。
        defaultOcr: true
        maxOutputChars: 32000
    若跳过了第 3 步，改用 `engine: node`、`defaultOcr: false`，并省略 runtimeDir。
-6. 运行 `dsh --profile web --dump-config` 验证合成后的 dsh-docling 条目与上面
-   的配置完全一致，然后报告结果，并提醒我重启 `dsh web` 后用 docling_health 测试。
+6. 运行 `dsh --profile web --dump-config` 验证合成后的 dsh-doc 条目与上面
+   的配置完全一致，然后报告结果，并提醒我重启 `dsh web` 后用 dshdoc_health 测试。
 
 硬性约束：绝不安装、启动或配置 Docling Serve、Docker、容器或任何远程文档转换
 服务；绝不配置可下载的 OCR 后端或允许模型下载；不要把克隆目录里的
 .dsh-runtime/ 产物提交进 Git。
 ```
 
-代理完成并重启 `dsh web` 后，先用 `docling_health` 检查引擎，再用
-`docling_extract` 解析工作区下的任意文件。[INSTALL.md](INSTALL.md) 记录了同样的
+代理完成并重启 `dsh web` 后，先用 `dshdoc_health` 检查引擎，再用
+`dshdoc_extract` 解析工作区下的任意文件。[INSTALL.md](INSTALL.md) 记录了同样的
 流程以及逐步手动安装方式。
 
 ## 已覆盖的能力
@@ -90,7 +90,7 @@ dsh plugin --profile web add ~/.dsh/plugins/dsh-docs
 在 web profile 的 `cordis.patch.yml` 中设置最小白名单：
 
 ```yaml
-- id: dsh-docling
+- id: dsh-doc
   config:
     engine: python
     runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
@@ -129,7 +129,7 @@ pwsh -File ./scripts/build-runtime-win32-x64.ps1
 将插件指向该运行时：
 
 ```yaml
-- id: dsh-docling
+- id: dsh-doc
   config:
     engine: python
     runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
@@ -138,7 +138,7 @@ pwsh -File ./scripts/build-runtime-win32-x64.ps1
 ```
 
 Python worker 只经 stdio 接收文件字节快照、显示名称、MIME 与选项，从不接收用户路径
-或 URL。它默认离线，缺少语言模型会安全失败，并禁用文档派生 OCR 缓存；`docling_health`
+或 URL。它默认离线，缺少语言模型会安全失败，并禁用文档派生 OCR 缓存；`dshdoc_health`
 会报告可用 OCR 语言。详见
 [运行时构建说明](docs/runtime-win32-x64.md)。
 
@@ -153,10 +153,10 @@ Python worker 只经 stdio 接收文件字节快照、显示名称、MIME 与选
 
 | 工具 | 用途 |
 | --- | --- |
-| `docling_health` | 检查当前本地解析引擎是否就绪。 |
-| `docling_convert_file` | 解析白名单中的本地文件。 |
-| `docling_extract` | 推荐的本地文件便捷工具。 |
-| `docling_convert_url` | 兼容占位工具，固定返回 `UNSUPPORTED_URL`。 |
+| `dshdoc_health` | 检查当前本地解析引擎是否就绪。 |
+| `dshdoc_convert_file` | 解析白名单中的本地文件。 |
+| `dshdoc_extract` | 推荐的本地文件便捷工具。 |
+| `dshdoc_convert_url` | 兼容占位工具，固定返回 `UNSUPPORTED_URL`。 |
 
 HTTP(S) 输入只会被安全识别并拒绝。若要解析远程文档，请先用已审核的下载流程保存到
 允许目录，再调用本插件；插件绝不会把 URL 交给 Xberg/Python，避免重定向与 DNS

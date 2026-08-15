@@ -65,14 +65,14 @@ function createPythonEngine(
     : join(config.runtimeDir, 'cache')
   const env: NodeJS.ProcessEnv = {
     ...process.env,
-    DSH_DOCLING_WORKER_MAX_INPUT_BYTES: String(config.maxFileBytes),
-    DSH_DOCLING_WORKER_MAX_TIMEOUT_MS: String(config.timeoutMs),
-    DSH_DOCLING_WORKER_MAX_OUTPUT_CHARS: String(config.maxOutputChars),
+    DSH_DOC_WORKER_MAX_INPUT_BYTES: String(config.maxFileBytes),
+    DSH_DOC_WORKER_MAX_TIMEOUT_MS: String(config.timeoutMs),
+    DSH_DOC_WORKER_MAX_OUTPUT_CHARS: String(config.maxOutputChars),
     XBERG_CACHE_DIR: runtimeCache,
     HF_HUB_OFFLINE: '1',
     HUGGINGFACE_HUB_OFFLINE: '1',
     ...(tessdataPath === undefined ? {} : {
-      DSH_DOCLING_TESSDATA_PATH: tessdataPath,
+      DSH_DOC_TESSDATA_PATH: tessdataPath,
       TESSDATA_PREFIX: tessdataPath
     })
   }

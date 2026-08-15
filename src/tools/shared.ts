@@ -1,6 +1,6 @@
 import { HarnessError } from '@deepseek-ai/dsh-llm'
 import type { Config } from '../config.js'
-import { DoclingError, isDoclingError } from '../docling/errors.js'
+import { DshdocError, isDshdocError } from '../dshdoc/errors.js'
 import { isDocumentEngineError } from '../engine/errors.js'
 import type { ConvertOptions } from '../engine/types.js'
 
@@ -27,24 +27,24 @@ export function convertOptions(args: ConversionArgs, config: Config): ConvertOpt
       || !Number.isSafeInteger(lastPage)
       || firstPage < 1
       || lastPage < firstPage) {
-      throw new DoclingError('DOCLING_BAD_REQUEST', 'page_range must contain two positive page numbers in ascending order.')
+      throw new DshdocError('DSHDOC_BAD_REQUEST', 'page_range must contain two positive page numbers in ascending order.')
     }
     pageRange = [firstPage, lastPage]
   }
   const outputFormat = args.output_format ?? config.defaultOutputFormat
   const tableMode = args.table_mode ?? config.defaultTableMode
   if (outputFormat !== 'md' && outputFormat !== 'text' && outputFormat !== 'json') {
-    throw new DoclingError('DOCLING_BAD_REQUEST', 'output_format must be md, text, or json.')
+    throw new DshdocError('DSHDOC_BAD_REQUEST', 'output_format must be md, text, or json.')
   }
   if (tableMode !== 'fast' && tableMode !== 'accurate') {
-    throw new DoclingError('DOCLING_BAD_REQUEST', 'table_mode must be fast or accurate.')
+    throw new DshdocError('DSHDOC_BAD_REQUEST', 'table_mode must be fast or accurate.')
   }
   const ocrLanguages = args.ocr_languages
   if (ocrLanguages !== undefined
     && (ocrLanguages.length === 0
       || ocrLanguages.length > MAX_OCR_LANGUAGES
       || ocrLanguages.some(language => !OCR_LANGUAGE_PATTERN.test(language)))) {
-    throw new DoclingError('DOCLING_BAD_REQUEST', 'ocr_languages must name 1-16 bundled local language packs, for example ["eng", "chi_sim"].')
+    throw new DshdocError('DSHDOC_BAD_REQUEST', 'ocr_languages must name 1-16 bundled local language packs, for example ["eng", "chi_sim"].')
   }
   return {
     outputFormat,
@@ -56,7 +56,7 @@ export function convertOptions(args: ConversionArgs, config: Config): ConvertOpt
 }
 
 export function asHarnessError(error: unknown): never {
-  if (isDoclingError(error)) throw new HarnessError(error.message, error.code)
+  if (isDshdocError(error)) throw new HarnessError(error.message, error.code)
   if (isDocumentEngineError(error)) throw new HarnessError(error.message, error.code)
   throw error
 }
@@ -65,7 +65,7 @@ export const CONVERSION_PARAMETERS = {
   output_format: {
     type: 'string' as const,
     enum: ['md', 'text', 'json'],
-    description: 'Requested Docling output: md (default), text, or json.'
+    description: 'Requested Dshdoc output: md (default), text, or json.'
   },
   ocr: { type: 'boolean' as const, description: 'Enable OCR for scans and bitmap content.' },
   table_mode: {

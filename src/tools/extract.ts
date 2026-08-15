@@ -3,7 +3,7 @@ import type { JsonValue } from '@deepseek-ai/dsh-tools'
 import type { Config } from '../config.js'
 import type { DocumentEngine } from '../engine/types.js'
 import { asConversionResult, renderConversion } from '../output/render.js'
-import { DoclingError } from '../docling/errors.js'
+import { DshdocError } from '../dshdoc/errors.js'
 import { resolveLocalFile } from '../security/local-path.js'
 import { CONVERSION_OUTPUT, CONVERSION_PARAMETERS, asHarnessError, convertOptions } from './shared.js'
 
@@ -13,7 +13,7 @@ function isHttpSource(source: string): boolean {
 
 export function createExtractTool(engine: DocumentEngine, config: Config) {
   return defineTool({
-    name: 'docling_extract',
+    name: 'dshdoc_extract',
     description: 'Preferred high-level local document tool. Extract PDF, Office, text, HTML, CSV, images, and scanned documents from an allowed local path. HTTP(S) URLs must be downloaded into an allowed local root first.',
     parameters: {
       source: { type: 'string' as const, required: true, description: 'Local document path inside allowedLocalRoots.' },
@@ -34,10 +34,10 @@ export function createExtractTool(engine: DocumentEngine, config: Config) {
         const urlInput = type === 'url' || (type === 'auto' && isHttpSource(args.source))
         const options = convertOptions(args, config)
         if (urlInput) {
-          throw new DoclingError('UNSUPPORTED_URL', 'Remote document URLs are not supported by the local-only engine. Download the file into allowedLocalRoots, then retry.')
+          throw new DshdocError('UNSUPPORTED_URL', 'Remote document URLs are not supported by the local-only engine. Download the file into allowedLocalRoots, then retry.')
         }
         if (!config.enableLocalFiles) {
-          throw new DoclingError('FILE_ACCESS_DENIED', 'Local document conversion is disabled by configuration.')
+          throw new DshdocError('FILE_ACCESS_DENIED', 'Local document conversion is disabled by configuration.')
         }
         const file = await resolveLocalFile(args.source, config.allowedLocalRoots, config.maxFileBytes, exec.agent?.session.header.cwd)
         return await engine.convertFile({ file, options, signal: exec.signal }) as unknown as JsonValue

@@ -8,11 +8,11 @@ import { createExtractTool } from './tools/extract.js'
 import { createHealthTool } from './tools/health.js'
 
 export { Config } from './config.js'
-export type { Config as DoclingConfig } from './config.js'
-export { DoclingError } from './docling/errors.js'
+export type { Config as DshdocConfig } from './config.js'
+export { DshdocError } from './dshdoc/errors.js'
 export type { ConversionResult, DocumentEngine, HealthResult } from './engine/types.js'
 
-export const name = 'dsh-docling'
+export const name = 'dsh-doc'
 export const inject = ['tools']
 
 /** Cordis entry point mounted by cordis.patch.yml. */
@@ -20,7 +20,7 @@ export function apply(ctx: Context, config: PluginConfig): void {
   const resolved = resolveConfig(config)
   const engine = createDocumentEngine(resolved, {
     ...(resolved.debug ? {
-      log: (message, details) => ctx.logger('dsh-docling').debug(message, details)
+      log: (message, details) => ctx.logger('dsh-doc').debug(message, details)
     } : {})
   })
   ctx.tools.register(createHealthTool(engine))

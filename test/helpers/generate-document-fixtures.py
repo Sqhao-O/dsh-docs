@@ -384,7 +384,7 @@ def main() -> int:
     arguments = parser.parse_args()
     output = arguments.output
     if output is None:
-        output = Path(tempfile.mkdtemp(prefix="dsh-docling-fixtures-"))
+        output = Path(tempfile.mkdtemp(prefix="dsh-doc-fixtures-"))
     manifest = generate(output.resolve())
     # The manifest carries non-ASCII sentinel text; write UTF-8 bytes directly so
     # a cp1252 console (GitHub hosted Windows runners) cannot fail the print.

@@ -2,7 +2,7 @@ import { constants, type Stats } from 'node:fs'
 import { lstat, open, realpath, stat } from 'node:fs/promises'
 import { basename, isAbsolute, parse, relative, resolve } from 'node:path'
 import type { LocalFile } from '../engine/types.js'
-import { DoclingError } from '../docling/errors.js'
+import { DshdocError } from '../dshdoc/errors.js'
 
 function isWithin(root: string, candidate: string): boolean {
   const pathFromRoot = relative(root, candidate)
@@ -53,30 +53,30 @@ export async function resolveLocalFile(
   workingDirectory?: string
 ): Promise<LocalFile> {
   if (allowedRoots.length === 0) {
-    throw new DoclingError('FILE_ACCESS_DENIED', 'Local document access requires allowedLocalRoots configuration.')
+    throw new DshdocError('FILE_ACCESS_DENIED', 'Local document access requires allowedLocalRoots configuration.')
   }
   // Do this before *any* filesystem call. A Windows UNC/device path could
   // otherwise negotiate with an attacker-controlled SMB endpoint before the
   // later realpath allowlist check rejects it.
   if (isNetworkDeviceOrUriPath(inputPath)) {
-    throw new DoclingError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
+    throw new DshdocError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
   }
   const requestedPath = resolve(workingDirectory ?? process.cwd(), inputPath)
   if (isNetworkDeviceOrUriPath(requestedPath)
     || !allowedRoots.some(root => !isNetworkDeviceOrUriPath(root) && isLexicallyWithin(root, requestedPath))) {
-    throw new DoclingError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
+    throw new DshdocError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
   }
   let realPath: string
   try {
     realPath = await realpath(requestedPath)
   } catch (error) {
-    if (error instanceof DoclingError) throw error
-    throw new DoclingError('FILE_NOT_FOUND', 'The requested document was not found.')
+    if (error instanceof DshdocError) throw error
+    throw new DshdocError('FILE_NOT_FOUND', 'The requested document was not found.')
   }
 
   const roots = await realAllowedRoots(allowedRoots)
   if (!roots.some(root => isWithin(root, realPath))) {
-    throw new DoclingError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
+    throw new DshdocError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
   }
 
   let handle: Awaited<ReturnType<typeof open>> | undefined
@@ -86,14 +86,14 @@ export async function resolveLocalFile(
     // file, rather than a later path-based read vulnerable to replacement.
     const currentPath = await realpath(realPath)
     if (!roots.some(root => isWithin(root, currentPath))) {
-      throw new DoclingError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
+      throw new DshdocError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
     }
     const pathDetails = await lstat(currentPath)
     if (!pathDetails.isFile()) {
-      throw new DoclingError('FILE_ACCESS_DENIED', 'The requested path must be a regular file.')
+      throw new DshdocError('FILE_ACCESS_DENIED', 'The requested path must be a regular file.')
     }
     if (pathDetails.size > maxFileBytes) {
-      throw new DoclingError('FILE_TOO_LARGE', `The document exceeds the configured ${maxFileBytes}-byte limit.`)
+      throw new DshdocError('FILE_TOO_LARGE', `The document exceeds the configured ${maxFileBytes}-byte limit.`)
     }
     // O_NOFOLLOW closes the open-time symlink race on platforms that support
     // it. Windows lacks that flag, so the descriptor identity check below is
@@ -106,20 +106,20 @@ export async function resolveLocalFile(
     const pathDetailsAfterOpen = await lstat(currentPath)
     const pathAfterOpen = await realpath(currentPath)
     if (pathAfterOpen !== currentPath || !roots.some(root => isWithin(root, pathAfterOpen))) {
-      throw new DoclingError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
+      throw new DshdocError('FILE_ACCESS_DENIED', 'The requested document is outside allowedLocalRoots.')
     }
     if (!details.isFile() || !pathDetailsAfterOpen.isFile()) {
-      throw new DoclingError('FILE_ACCESS_DENIED', 'The requested path must be a regular file.')
+      throw new DshdocError('FILE_ACCESS_DENIED', 'The requested path must be a regular file.')
     }
     if (!sameFileIdentity(details, pathDetailsAfterOpen)) {
-      throw new DoclingError('FILE_ACCESS_DENIED', 'The requested document changed during authorization.')
+      throw new DshdocError('FILE_ACCESS_DENIED', 'The requested document changed during authorization.')
     }
     if (details.size > maxFileBytes) {
-      throw new DoclingError('FILE_TOO_LARGE', `The document exceeds the configured ${maxFileBytes}-byte limit.`)
+      throw new DshdocError('FILE_TOO_LARGE', `The document exceeds the configured ${maxFileBytes}-byte limit.`)
     }
     const bytes = await handle.readFile()
     if (bytes.byteLength > maxFileBytes) {
-      throw new DoclingError('FILE_TOO_LARGE', `The document exceeds the configured ${maxFileBytes}-byte limit.`)
+      throw new DshdocError('FILE_TOO_LARGE', `The document exceeds the configured ${maxFileBytes}-byte limit.`)
     }
     return {
       path: pathAfterOpen,
@@ -131,8 +131,8 @@ export async function resolveLocalFile(
       bytes
     }
   } catch (error) {
-    if (error instanceof DoclingError) throw error
-    throw new DoclingError('FILE_NOT_FOUND', 'The requested document was not found.')
+    if (error instanceof DshdocError) throw error
+    throw new DshdocError('FILE_NOT_FOUND', 'The requested document was not found.')
   } finally {
     await handle?.close()
   }
