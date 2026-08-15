@@ -213,4 +213,34 @@ describe('embedded Python Xberg stdio engine', () => {
       await fixtures.dispose()
     }
   }, 180_000)
+
+  chineseOcrIt('defaults to every bundled language pack when none are configured', async () => {
+    const fixtures = await generateDocumentFixtures()
+    const engine = new PythonStdioClient({
+      pythonCommand: python,
+      pythonArgs: ['-I', '-s'],
+      workerPath,
+      timeoutMs: 60_000,
+      maxOutputChars: 8_192,
+      ocrBackend: 'tesseract',
+      env: {
+        ...process.env,
+        DSH_DOCLING_TESSDATA_PATH: tessdata,
+        TESSDATA_PREFIX: tessdata,
+        XBERG_CACHE_DIR: join(fixtures.directory, 'default-languages-cache'),
+        HF_HUB_OFFLINE: '1',
+        HUGGINGFACE_HUB_OFFLINE: '1'
+      }
+    })
+    try {
+      await expect(engine.health()).resolves.toMatchObject({ ocrAvailable: true })
+      // chi_sim is bundled but was never configured; the default language set
+      // must still recognize the Chinese fixture.
+      const result = await engine.convertFile(await input(fixtures.file('chinesePng'), true))
+      const compact = result.markdown?.replace(/\s/g, '') ?? ''
+      expect(compact).toContain('中文')
+    } finally {
+      await fixtures.dispose()
+    }
+  }, 180_000)
 })

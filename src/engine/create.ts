@@ -42,7 +42,7 @@ function createNodeEngine(config: ResolvedConfig, options: CreateDocumentEngineO
   return new XbergNodeClient({
     timeoutMs: config.timeoutMs,
     maxOutputChars: config.maxOutputChars,
-    ocrLanguages: config.ocrLanguages,
+    ...(config.ocrLanguages === undefined ? {} : { ocrLanguages: config.ocrLanguages }),
     ocrBackend: config.ocrBackend,
     ...(tessdataPath === undefined ? {} : { tessdataPath }),
     ...(options.log === undefined ? {} : { debug: options.log })
@@ -86,7 +86,7 @@ function createPythonEngine(
     workerPath,
     timeoutMs: config.timeoutMs,
     maxOutputChars: config.maxOutputChars,
-    ocrLanguages: config.ocrLanguages,
+    ...(config.ocrLanguages === undefined ? {} : { ocrLanguages: config.ocrLanguages }),
     ocrBackend: config.ocrBackend,
     env
   })

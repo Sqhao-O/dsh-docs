@@ -125,6 +125,20 @@ describe('local Xberg N-API engine', () => {
     }
   }, 180_000)
 
+  ocrIt('defaults OCR languages to every pack in the pinned tessdata directory', async () => {
+    const engine = new XbergNodeClient({
+      timeoutMs: 60_000,
+      maxOutputChars: 8_192,
+      ocrBackend: 'tesseract',
+      tessdataPath: tessdata
+    })
+    const bundled = (await readdir(tessdata))
+      .filter(entry => entry.endsWith('.traineddata'))
+      .map(entry => entry.slice(0, -'.traineddata'.length))
+      .sort()
+    await expect(engine.health()).resolves.toMatchObject({ ocrAvailable: true, ocrLanguages: bundled })
+  }, 180_000)
+
   ocrIt('does not retain document-derived OCR cache files', async () => {
     const fixtures = await generateDocumentFixtures()
     const cacheDirectory = await mkdtemp(join(tmpdir(), 'dsh-docling-xberg-cache-'))

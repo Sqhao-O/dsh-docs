@@ -59,7 +59,7 @@ export interface PythonStdioClientOptions {
   readonly maxResponseBytes?: number
   /** Optional model-facing output bound applied after a successful conversion. */
   readonly maxOutputChars?: number
-  /** Language packs available in the managed local runtime. */
+  /** Language packs requested from the managed local runtime. Defaults to every bundled pack. */
   readonly ocrLanguages?: readonly string[]
   readonly ocrBackend?: 'auto' | 'tesseract'
   readonly cwd?: string
@@ -82,7 +82,8 @@ interface PythonConvertOptions {
   readonly ocr: boolean
   readonly table_mode: ConvertFileInput['options']['tableMode']
   readonly page_range?: readonly [number, number]
-  readonly ocr_languages: readonly string[]
+  /** Pinned request languages. Omitted requests use the worker's bundled packs. */
+  readonly ocr_languages?: readonly string[]
   readonly ocr_backend: 'auto' | 'tesseract'
   readonly timeout_ms: number
   readonly max_output_chars: number
@@ -438,7 +439,7 @@ export class PythonStdioClient implements DocumentEngine {
         output_format: input.options.outputFormat,
         ocr: input.options.ocr,
         table_mode: input.options.tableMode,
-        ocr_languages: [...(this.options.ocrLanguages ?? ['eng'])],
+        ...(this.options.ocrLanguages === undefined ? {} : { ocr_languages: [...this.options.ocrLanguages] }),
         ocr_backend: this.options.ocrBackend ?? 'auto',
         timeout_ms: this.options.timeoutMs,
         max_output_chars: this.maxOutputChars,

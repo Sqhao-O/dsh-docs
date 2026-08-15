@@ -107,6 +107,25 @@ describe('PythonStdioClient protocol boundary', () => {
     expect(observed).toMatchObject({ command: 'embedded-python', args: ['-u', '-I', '-s', 'worker.py'], options: { shell: false, windowsHide: true } })
   })
 
+  it('omits ocr_languages from the request when none are configured', async () => {
+    let request: Request | undefined
+    const engine = new PythonStdioClient({
+      pythonCommand: 'embedded-python',
+      workerPath: 'worker.py',
+      timeoutMs: 1_000,
+      maxOutputChars: 8_192,
+      requestId: () => 'request-1',
+      spawn: spawnWith((worker, received) => {
+        request = received
+        response(worker, received, { format: 'pdf', metadata: {}, markdown: 'ok' })
+      })
+    })
+
+    await engine.convertFile(input())
+    const options = request?.options as Record<string, unknown>
+    expect('ocr_languages' in options).toBe(false)
+  })
+
   it('maps health, text, JSON, and bounded JSON previews from well-formed responses', async () => {
     const health = client((worker, request) => response(worker, request, {
       status: 'ready',

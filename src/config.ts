@@ -21,8 +21,8 @@ export interface Config {
   /** Select the local OCR implementation exposed by Xberg. */
   /** Only the pinned local Tesseract backend is exposed in this release. */
   ocrBackend: 'auto' | 'tesseract'
-  /** Ordered local OCR languages; runtime packs decide which language data is installed. */
-  ocrLanguages: string[]
+  /** Ordered local OCR languages. Defaults to the packs bundled in the configured runtime. */
+  ocrLanguages?: string[]
   timeoutMs: number
   maxFileBytes: number
   enableLocalFiles: boolean
@@ -48,7 +48,9 @@ export const Config: Schema<Config> = Schema.object({
   pythonWorkerPath: Schema.string().min(1),
   tessdataPath: Schema.string().min(1),
   ocrBackend: Schema.union(['auto', 'tesseract']).default('auto'),
-  ocrLanguages: Schema.array(Schema.string().min(1)).default(['eng']),
+  // Schemastery defaults a bare array schema to []; default(undefined) keeps the
+  // field absent so the engines fall back to the runtime's bundled packs.
+  ocrLanguages: Schema.array(Schema.string().min(1)).default(undefined as never),
   timeoutMs: Schema.number().step(1).min(1_000).max(600_000).default(DEFAULT_TIMEOUT_MS),
   maxFileBytes: Schema.number().step(1).min(1).max(1024 * 1024 * 1024).default(DEFAULT_MAX_FILE_BYTES),
   enableLocalFiles: Schema.boolean().default(true),
@@ -92,8 +94,9 @@ export function resolveConfig(config: Config): ResolvedConfig {
     && (!isAbsolute(config.pythonWorkerPath) || isNetworkDeviceOrUriPath(config.pythonWorkerPath))) {
     throw new TypeError('pythonWorkerPath must be an absolute path')
   }
-  if (config.ocrLanguages.length === 0
-    || config.ocrLanguages.some(language => !/^[A-Za-z0-9_+-]+$/.test(language))) {
+  if (config.ocrLanguages !== undefined
+    && (config.ocrLanguages.length === 0
+      || config.ocrLanguages.some(language => !/^[A-Za-z0-9_+-]+$/.test(language)))) {
     throw new TypeError('ocrLanguages must contain one or more safe local language identifiers')
   }
   for (const root of config.allowedLocalRoots) {

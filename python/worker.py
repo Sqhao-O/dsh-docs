@@ -191,8 +191,27 @@ def _option_string(options: Mapping[str, Any], name: str, default: str, allowed:
     return value
 
 
+def _bundled_languages() -> list[str]:
+    """List the Tesseract packs deliberately bundled by the platform runtime."""
+    raw_path = os.environ.get("DSH_DOCLING_TESSDATA_PATH")
+    if not raw_path:
+        return []
+    directory = Path(raw_path)
+    if not directory.is_dir():
+        return []
+    return sorted(
+        item.stem
+        for item in directory.glob("*.traineddata")
+        if item.is_file() and LANGUAGE_PATTERN.fullmatch(item.stem)
+    )
+
+
 def _ocr_languages(options: Mapping[str, Any]) -> list[str]:
-    value = options.get("ocr_languages", ["eng"])
+    value = options.get("ocr_languages")
+    if value is None:
+        # The caller did not pin languages: use every pack the runtime carries
+        # instead of defaulting to English-only OCR.
+        return _bundled_languages()
     if not isinstance(value, list) or not value or len(value) > MAX_LANGUAGES:
         raise WorkerError("ENGINE_PROTOCOL_ERROR")
     if not all(isinstance(item, str) and LANGUAGE_PATTERN.fullmatch(item) for item in value):
@@ -322,10 +341,10 @@ def _build_config(options_value: object) -> tuple[dict[str, Any], int, str, tupl
             raise WorkerError("ENGINE_OCR_UNAVAILABLE")
         backend = "tesseract"
         languages = _ocr_languages(options)
+        if not languages:
+            raise WorkerError("ENGINE_OCR_UNAVAILABLE")
         tessdata_path = _tessdata_path(languages)
-        ocr_config: dict[str, Any] = {"enabled": True, "backend": backend}
-        if languages:
-            ocr_config["language"] = languages
+        ocr_config: dict[str, Any] = {"enabled": True, "backend": backend, "language": languages}
         ocr_config["tessdata_path"] = tessdata_path
         ocr_config["tesseract_config"] = {
             "language": languages,
@@ -464,17 +483,7 @@ def _health() -> dict[str, Any]:
     except (ImportError, OSError):
         raise WorkerError("ENGINE_UNAVAILABLE") from None
     backends = xberg.list_ocr_backends()
-    tessdata_path = os.environ.get("DSH_DOCLING_TESSDATA_PATH")
-    tessdata_directory = Path(tessdata_path) if tessdata_path else None
-    ocr_languages = (
-        sorted(
-            item.stem
-            for item in tessdata_directory.glob("*.traineddata")
-            if item.is_file() and LANGUAGE_PATTERN.fullmatch(item.stem)
-        )
-        if tessdata_directory is not None and tessdata_directory.is_dir()
-        else []
-    )
+    ocr_languages = _bundled_languages()
     ocr_available = bool(ocr_languages and "tesseract" in backends)
     return {
         "status": "ready",

@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { readdir, readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { extract, ExtractInputKind, OutputFormat as XbergOutputFormat } from '@xberg-io/xberg'
 import type { ExtractedDocument, ExtractionConfig } from '@xberg-io/xberg'
@@ -10,8 +10,8 @@ import { isJsonValue } from './types.js'
 export interface XbergNodeClientOptions {
   readonly timeoutMs: number
   readonly maxOutputChars: number
-  /** Ordered OCR language identifiers understood by the selected Xberg backend. */
-  readonly ocrLanguages: readonly string[]
+  /** Ordered OCR language identifiers understood by the selected Xberg backend. Defaults to every bundled pack. */
+  readonly ocrLanguages?: readonly string[]
   /** `auto` lets Xberg select its configured local OCR implementation. */
   readonly ocrBackend: 'auto' | 'tesseract'
   /** Absolute directory of pinned Tesseract language packs, when packaged. */
@@ -139,15 +139,35 @@ export class XbergNodeClient implements DocumentEngine {
   constructor(private readonly options: XbergNodeClientOptions) {
     if (!Number.isSafeInteger(options.timeoutMs) || options.timeoutMs < 1
       || !Number.isSafeInteger(options.maxOutputChars) || options.maxOutputChars < 128
-      || options.ocrLanguages.length === 0
-      || options.ocrLanguages.some(language => !/^[A-Za-z0-9_+-]+$/.test(language))
+      || (options.ocrLanguages !== undefined
+        && (options.ocrLanguages.length === 0
+          || options.ocrLanguages.some(language => !/^[A-Za-z0-9_+-]+$/.test(language))))
       || (options.ocrBackend !== 'auto' && options.ocrBackend !== 'tesseract')) {
       throw documentEngineError('ENGINE_RUNTIME_INVALID')
     }
   }
 
+  /** Configured languages, or every pack bundled in the pinned tessdata directory. */
+  private async resolvedLanguages(): Promise<string[]> {
+    if (this.options.ocrLanguages !== undefined) return [...this.options.ocrLanguages]
+    const tessdataPath = this.options.tessdataPath
+    if (tessdataPath === undefined) throw documentEngineError('ENGINE_OCR_UNAVAILABLE')
+    let entries: string[]
+    try {
+      entries = await readdir(tessdataPath)
+    } catch {
+      throw documentEngineError('ENGINE_OCR_UNAVAILABLE')
+    }
+    return entries
+      .filter(entry => entry.endsWith('.traineddata'))
+      .map(entry => entry.slice(0, -'.traineddata'.length))
+      .filter(stem => /^[A-Za-z0-9_+-]+$/.test(stem))
+      .sort()
+  }
+
   private async ocrConfig(tableMode: ConvertFileInput['options']['tableMode']): Promise<NonNullable<ExtractionConfig['ocr']>> {
-    const languages = [...this.options.ocrLanguages]
+    const languages = await this.resolvedLanguages()
+    if (languages.length === 0) throw documentEngineError('ENGINE_OCR_UNAVAILABLE')
     const tessdataPath = this.options.tessdataPath
     if (tessdataPath === undefined) throw documentEngineError('ENGINE_OCR_UNAVAILABLE')
     const tessdataBytes = await pinnedTessdata(tessdataPath, languages)
@@ -169,18 +189,22 @@ export class XbergNodeClient implements DocumentEngine {
     }
   }
 
-  private async ocrAvailability(): Promise<boolean> {
+  /** Languages whose pinned packs all exist, or empty when OCR is unavailable. */
+  private async availableOcrLanguages(): Promise<readonly string[]> {
     try {
-      await pinnedTessdata(this.options.tessdataPath, this.options.ocrLanguages)
-      return true
+      const languages = await this.resolvedLanguages()
+      if (languages.length === 0) return []
+      await pinnedTessdata(this.options.tessdataPath, languages)
+      return languages
     } catch {
-      return false
+      return []
     }
   }
 
   async health(signal?: AbortSignal): Promise<HealthResult> {
     const startedAt = performance.now()
-    const ocrAvailable = await this.ocrAvailability()
+    const ocrLanguages = await this.availableOcrLanguages()
+    const ocrAvailable = ocrLanguages.length > 0
     // A tiny in-memory parse confirms that the N-API binary was loaded, not
     // merely that its JavaScript wrapper could be imported.
     try {
@@ -200,7 +224,7 @@ export class XbergNodeClient implements DocumentEngine {
         engine: 'xberg-node',
         runtimeVersion: '1.0.14',
         ocrAvailable,
-        ocrLanguages: ocrAvailable ? [...this.options.ocrLanguages] : [],
+        ocrLanguages: [...ocrLanguages],
         latencyMs: Math.max(0, Math.round(performance.now() - startedAt))
       }
     } catch (error) {

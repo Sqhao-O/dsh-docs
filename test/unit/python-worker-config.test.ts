@@ -53,4 +53,28 @@ describe('embedded Python worker configuration', () => {
       rmSync(tessdata, { recursive: true, force: true })
     }
   })
+
+  pythonIt('defaults OCR languages to every pack bundled in the runtime', () => {
+    const tessdata = mkdtempSync(join(tmpdir(), 'dsh-docling-tessdata-'))
+    writeFileSync(join(tessdata, 'eng.traineddata'), 'test-pack')
+    writeFileSync(join(tessdata, 'chi_sim.traineddata'), 'test-pack')
+    const script = [
+      'import importlib.util, json, sys',
+      'spec = importlib.util.spec_from_file_location("worker", sys.argv[1])',
+      'worker = importlib.util.module_from_spec(spec)',
+      'spec.loader.exec_module(worker)',
+      'config, _, _, _, _ = worker._build_config({"output_format": "md", "ocr": True, "table_mode": "fast"})',
+      'print(json.dumps(config["ocr"]["language"]))'
+    ].join('\n')
+    try {
+      const result = spawnSync(python, ['-c', script, workerPath], {
+        encoding: 'utf8',
+        env: { ...process.env, DSH_DOCLING_TESSDATA_PATH: tessdata }
+      })
+      expect(result.status, result.stderr).toBe(0)
+      expect(JSON.parse(result.stdout)).toEqual(['chi_sim', 'eng'])
+    } finally {
+      rmSync(tessdata, { recursive: true, force: true })
+    }
+  })
 })

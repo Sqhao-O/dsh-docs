@@ -14,7 +14,7 @@ describe('plugin configuration', () => {
     expect(config.timeoutMs).toBe(DEFAULT_TIMEOUT_MS)
     expect(config.maxFileBytes).toBe(DEFAULT_MAX_FILE_BYTES)
     expect(config.maxOutputChars).toBe(DEFAULT_MAX_OUTPUT_CHARS)
-    expect(config.ocrLanguages).toEqual(['eng'])
+    expect(config.ocrLanguages).toBeUndefined()
     expect(config.enableRemoteUrls).toBe(false)
     expect(config.allowedLocalRoots).toEqual([])
     expect(config.defaultOcr).toBe(false)
