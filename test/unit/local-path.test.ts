@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, rm, symlink, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, realpath, rm, symlink, writeFile } from 'node:fs/promises'
 import { join, parse, resolve } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -8,7 +8,9 @@ import { mediaTypeForPath, resolveLocalFile, sameFileIdentity } from '../../src/
 const temporaryDirectories: string[] = []
 
 async function sandbox(): Promise<{ root: string, outside: string }> {
-  const base = await mkdtemp(join(tmpdir(), 'dsh-docling-path-'))
+  // Canonicalize the temp root: on Windows hosts %TEMP% may use an 8.3 short
+  // name (RUNNER~1) while resolveLocalFile always returns the realpath.
+  const base = await realpath(await mkdtemp(join(tmpdir(), 'dsh-docling-path-')))
   temporaryDirectories.push(base)
   const root = join(base, 'allowed')
   const outside = join(base, 'outside')
