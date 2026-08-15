@@ -30,7 +30,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint
       - run: pnpm typecheck
-      - run: pnpm test
+      # Runtime-backed tests skip on Linux, so the coverage gate lives in the
+      # Windows job below where the full suite runs against the real runtime.
+      - run: pnpm test:nocov
       - run: pnpm build
 
   windows-offline-ocr:
@@ -47,7 +49,9 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pwsh -NoProfile -File .\scripts\build-runtime-win32-x64.ps1
       - run: pwsh -NoProfile -File .\scripts\verify-runtime-win32-x64.ps1
-      - run: pnpm test:integration
+      # Full suite with the coverage gate: the freshly built runtime lets the
+      # Python stdio and OCR integration tests run unskipped.
+      - run: pnpm test
         env:
           DSH_DOC_TEST_PYTHON: ${{ github.workspace }}/.dsh-runtime/runtime-win32-x64/python/python.exe
           DSH_DOC_TEST_WORKER: ${{ github.workspace }}/.dsh-runtime/runtime-win32-x64/python/worker.py

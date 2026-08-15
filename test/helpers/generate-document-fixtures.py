@@ -14,6 +14,7 @@ import binascii
 import json
 import os
 import struct
+import sys
 import tempfile
 import zipfile
 import zlib
@@ -385,7 +386,9 @@ def main() -> int:
     if output is None:
         output = Path(tempfile.mkdtemp(prefix="dsh-docling-fixtures-"))
     manifest = generate(output.resolve())
-    print(json.dumps(manifest, ensure_ascii=False))
+    # The manifest carries non-ASCII sentinel text; write UTF-8 bytes directly so
+    # a cp1252 console (GitHub hosted Windows runners) cannot fail the print.
+    sys.stdout.buffer.write(json.dumps(manifest, ensure_ascii=False).encode("utf-8") + b"\n")
     return 0
 
 
