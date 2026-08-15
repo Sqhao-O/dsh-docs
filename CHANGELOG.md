@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.1.1
+
+- Fix a profile-breaking module split: declaring `@deepseek-ai/dsh-tools` as a
+  runtime dependency installed a second copy into the profile's `node_modules`,
+  and the profile-anchored plugin loader then instantiated the `tools` service
+  (`ToolRuntime`) from that shadow copy while the rest of the harness read its
+  symbol-keyed scheduler from the global copy. PTC `run_code` dispatch crashed
+  with `Cannot read properties of undefined (reading 'prepare')`, and the
+  aborted turn poisoned the session history (subsequent turns failed with
+  INVALID_REQUEST). `@deepseek-ai/dsh-tools` and `@deepseek-ai/schemastery` are
+  now peer-only so the profile never shadows the host's copies.
+
 ## Unreleased
 
 - Replace the PowerShell-only runtime build/verify scripts with plain Node.js

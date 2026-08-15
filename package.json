@@ -1,6 +1,6 @@
 {
   "name": "dsh-doc",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Local PDF, Office, image, and OCR document intelligence for DeepSeek Harness.",
   "license": "MIT",
   "homepage": "https://github.com/Sqhao-O/dsh-docs#readme",
@@ -71,17 +71,19 @@
   ],
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
-    "@deepseek-ai/dsh-llm": "^0.1.0-rc.6"
+    "@deepseek-ai/dsh-llm": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
+    "@deepseek-ai/schemastery": "^3.18.1"
   },
   "dependencies": {
-    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
-    "@deepseek-ai/schemastery": "^3.18.1",
     "@xberg-io/xberg": "1.0.14"
   },
   "devDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-llm": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-system-prompt": "^0.1.0-rc.6",
+    "@deepseek-ai/dsh-tools": "^0.1.0-rc.6",
+    "@deepseek-ai/schemastery": "^3.18.1",
     "@eslint/js": "^9.39.1",
     "@types/node": "^22.18.12",
     "@vitest/coverage-v8": "^4.0.8",
