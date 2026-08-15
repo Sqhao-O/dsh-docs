@@ -28,7 +28,8 @@ release.
 No local checkout is needed. Paste the following prompt into a running DSH
 session (for example `dsh web`) in your own project folder. The Harness agent
 clones, builds, registers, and configures the plugin in one go. Prerequisites:
-`git`, `pnpm` ≥ 10, Node `^22.19` or `>= 24`, and PowerShell 7+ on Windows x64.
+`git`, `pnpm` ≥ 10, and Node `^22.19` or `>= 24`. The runtime build script is
+plain Node.js, so any shell works: cmd, PowerShell, pwsh, or Git Bash.
 
 ```text
 Install the dsh-doc plugin into my DSH web profile, end to end. Do every
@@ -42,7 +43,7 @@ step yourself in the terminal and verify the result.
    compiles lib/; make sure lib/index.js exists afterwards.
 3. Windows x64 only — build the offline OCR runtime (every download is
    SHA-256 pinned):
-   pwsh -File <clone>/scripts/build-runtime-win32-x64.ps1
+   node <clone>/scripts/build-runtime-win32-x64.mjs
    On any other platform, skip this step and use engine: node below.
 4. Register the plugin with my web profile:
    dsh plugin --profile web add <clone>
@@ -91,8 +92,8 @@ to the absolute path of your own checkout everywhere, including inside the YAML.
 
 Build the offline Python runtime first:
 
-```powershell
-pwsh -File ./scripts/build-runtime-win32-x64.ps1
+```text
+node ./scripts/build-runtime-win32-x64.mjs
 ```
 
 Then install the local plugin into the `web` profile:
@@ -137,15 +138,15 @@ from which `dsh web` was started.
 
 Build the separate runtime artifact:
 
-```powershell
-pwsh -File ./scripts/build-runtime-win32-x64.ps1
+```text
+node ./scripts/build-runtime-win32-x64.mjs
 ```
 
 This creates a gitignored `.dsh-runtime/runtime-win32-x64` directory containing
 CPython 3.11.9, `xberg==1.0.14`, and pinned `eng` / `chi_sim` Tesseract data.
 Every downloaded file is SHA-256 validated; the artifact contains a manifest,
 NOTICE, and SPDX inventory. It does not alter a global Python installation.
-Run `pwsh -File ./scripts/verify-runtime-win32-x64.ps1` before pointing a
+Run `node ./scripts/verify-runtime-win32-x64.mjs` before pointing a
 profile at a copied runtime artifact.
 
 Point the plugin at the runtime:

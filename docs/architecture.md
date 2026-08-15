@@ -47,7 +47,7 @@ rebinding or redirects to bypass the plugin's authorization boundary.
 
 ## Python runtime artifact
 
-The normal npm package remains small. `scripts/build-runtime-win32-x64.ps1`
+The normal npm package remains small. `scripts/build-runtime-win32-x64.mjs`
 creates a separately deployable Windows x64 runtime under `.dsh-runtime/` with
 pinned CPython, Xberg, `eng`, and `chi_sim` data. The artifact holds a manifest,
 hashes, notices, and an SPDX inventory. See [runtime-win32-x64.md](runtime-win32-x64.md).

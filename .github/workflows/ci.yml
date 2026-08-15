@@ -47,8 +47,8 @@ jobs:
           node-version: 24.x
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pwsh -NoProfile -File .\scripts\build-runtime-win32-x64.ps1
-      - run: pwsh -NoProfile -File .\scripts\verify-runtime-win32-x64.ps1
+      - run: node .\scripts\build-runtime-win32-x64.mjs
+      - run: node .\scripts\verify-runtime-win32-x64.mjs
       # Full suite with the coverage gate: the freshly built runtime lets the
       # Python stdio and OCR integration tests run unskipped.
       - run: pnpm test

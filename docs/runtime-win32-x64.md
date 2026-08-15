@@ -3,8 +3,8 @@
 `dsh-doc` keeps the Python/OCR engine out of the small npm package. Build the
 separately versioned Windows x64 artifact with:
 
-~~~powershell
-pwsh -File .\scripts\build-runtime-win32-x64.ps1
+~~~text
+node ./scripts/build-runtime-win32-x64.mjs
 ~~~
 
 The artifact is written to .dsh-runtime\runtime-win32-x64, which is
@@ -55,14 +55,13 @@ with `ENGINE_OCR_UNAVAILABLE`.
 
 ## Audit before distribution
 
-~~~powershell
-$runtime = Resolve-Path .\.dsh-runtime\runtime-win32-x64
-pwsh -File .\scripts\verify-runtime-win32-x64.ps1 -RuntimeDirectory $runtime
-Get-Content "$runtime\manifest.json" | ConvertFrom-Json
-Get-Content "$runtime\sbom.spdx.json" | ConvertFrom-Json
-Get-Content "$runtime\sbom\xberg-py.cyclonedx.json" | ConvertFrom-Json
-& "$runtime\run-worker.cmd"
+~~~text
+node ./scripts/verify-runtime-win32-x64.mjs .dsh-runtime/runtime-win32-x64
 ~~~
+
+Inspect the manifest and component inventories in the generated artifact
+(`manifest.json`, `sbom.spdx.json`, `sbom/xberg-py.cyclonedx.json`), and run
+`run-worker.cmd` for a manual stdio check.
 
 The verifier hashes every payload listed in `manifest.json` and rejects missing,
 changed, or unexpected files. The top-level SPDX document covers the runtime
