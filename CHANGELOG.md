@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- BREAKING: Rename the package and plugin id to `dsh-doc`, the tools to
+  `dshdoc_*`, the error types to `DshdocError`/`DshdocErrorCode` with
+  `DSHDOC_*` codes, and the worker environment variables to `DSH_DOC_*`
+  (from the initial `dsh-docling` / `docling_*` / `DSH_DOCLING_*` release).
 - Replace the Docling Serve HTTP transport with local Xberg parsing.
 - Add native Node and optional embedded-Python stdio engines.
 - Add a pinned Windows x64 runtime builder with offline Tesseract data.

@@ -9,7 +9,7 @@ It is deliberately source-only in this repository.  A normal npm package must
 not contain a CPython distribution, native DLLs, OCR language data, or model
 weights: those are platform-specific and can be hundreds of megabytes.  Ship
 them in a separately versioned platform runtime artifact, for example
-`@dsh-doc/runtime-win32-x64`, with this layout:
+`dshdoc-runtime-win32-x64`, with this layout:
 
 ```text
 runtime-win32-x64/

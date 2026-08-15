@@ -19,8 +19,8 @@ native Xberg Node binding serves as a lightweight non-OCR fallback on any
 platform, and every file read stays confined to folders you explicitly
 authorize.
 
-The published package, plugin id, and `dshdoc_*` tool names use the `dsh-doc`
-spelling; they were renamed from the initial `dsh-docling` / `docling_*`
+The published package and plugin id use the `dsh-doc` spelling and the tools
+use `dshdoc_*`; they were renamed from the initial `dsh-docling` / `docling_*`
 release.
 
 ## One-prompt install
