@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
   - name: Security vulnerability
-    url: https://github.com/Sqhao-O/dsh-docling/security/advisories/new
+    url: https://github.com/Sqhao-O/dsh-docs/security/advisories/new
     about: Report vulnerabilities privately; do not open a public issue.

@@ -9,7 +9,7 @@
 ## Reporting a vulnerability
 
 Do not disclose a suspected vulnerability in a public issue. Use GitHub's
-[private security advisory form](https://github.com/Sqhao-O/dsh-docling/security/advisories/new)
+[private security advisory form](https://github.com/Sqhao-O/dsh-docs/security/advisories/new)
 and include a minimal reproduction, affected version, impact, and any proposed
 mitigation. The maintainer will acknowledge reports as soon as practical and
 coordinate a fix before public disclosure.

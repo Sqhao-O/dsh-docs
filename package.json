@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "description": "Local PDF, Office, image, and OCR document intelligence for DeepSeek Harness.",
   "license": "MIT",
-  "homepage": "https://github.com/Sqhao-O/dsh-docling#readme",
+  "homepage": "https://github.com/Sqhao-O/dsh-docs#readme",
   "bugs": {
-    "url": "https://github.com/Sqhao-O/dsh-docling/issues"
+    "url": "https://github.com/Sqhao-O/dsh-docs/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Sqhao-O/dsh-docling.git"
+    "url": "git+https://github.com/Sqhao-O/dsh-docs.git"
   },
   "packageManager": "pnpm@10.33.4",
   "type": "module",

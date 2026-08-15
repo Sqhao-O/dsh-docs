@@ -1,8 +1,8 @@
-# dsh-docling
+# dsh-docs
 
 [English](README.md) | [安装提示词](INSTALL.md)
 
-**dsh-docling** 让 DeepSeek Harness 代理拥有真正的本地文档理解能力——全部在你
+**dsh-docs** 让 DeepSeek Harness 代理拥有真正的本地文档理解能力——全部在你
 自己的机器上完成。把 PDF、Word、Excel、PowerPoint 交给它，即可拿回干净的
 Markdown、纯文本或结构化 JSON；把扫描件或图片交给它，完全离线的 OCR 流水线
 会直接读出其中的文字。无需 Docker、无需 HTTP 服务、无需 API Key，文档永不
@@ -12,6 +12,9 @@ Markdown、纯文本或结构化 JSON；把扫描件或图片交给它，完全�
 运行时，内置离线 Tesseract 语言数据（英文与简体中文），在 Windows x64 上开箱
 即得完整的 PDF/Office/OCR 能力；原生 Xberg Node 绑定则作为任意平台上轻量的非
 OCR 解析回退。所有文件读取都被严格限制在你显式授权的目录之内。
+
+发布包名、插件 id 与 `docling_*` 工具名仍沿用 `dsh-docling` 拼写，以保证既有
+profile 继续可用。
 
 ## 一段提示词完成安装
 
@@ -25,7 +28,7 @@ PowerShell 7+。
 完成并验证结果。
 
 1. 克隆仓库（目录已存在则跳过此步）：
-   git clone https://github.com/Sqhao-O/dsh-docling.git <home>/.dsh/plugins/dsh-docling
+   git clone https://github.com/Sqhao-O/dsh-docs.git <home>/.dsh/plugins/dsh-docs
    把 <home> 替换成我的主目录绝对路径，之后所有步骤都使用这个克隆目录的绝对路径。
 2. 构建插件：在克隆目录里运行 `pnpm install`（其 prepare 脚本会编译 lib/），
    完成后确认 lib/index.js 存在。
@@ -69,7 +72,7 @@ PowerShell 7+。
 
 ## 通过 `dsh web` 快速使用
 
-以下示例假设克隆目录为 `~/.dsh/plugins/dsh-docling`；请把所有位置（包括 YAML
+以下示例假设克隆目录为 `~/.dsh/plugins/dsh-docs`；请把所有位置（包括 YAML
 内）的 `~` 展开为你自己克隆目录的绝对路径。
 
 先构建离线 Python 运行时：
@@ -81,7 +84,7 @@ pwsh -File ./scripts/build-runtime-win32-x64.ps1
 再将本地插件安装到 `web` profile：
 
 ```powershell
-dsh plugin --profile web add ~/.dsh/plugins/dsh-docling
+dsh plugin --profile web add ~/.dsh/plugins/dsh-docs
 ```
 
 在 web profile 的 `cordis.patch.yml` 中设置最小白名单：
@@ -90,7 +93,7 @@ dsh plugin --profile web add ~/.dsh/plugins/dsh-docling
 - id: dsh-docling
   config:
     engine: python
-    runtimeDir: ~/.dsh/plugins/dsh-docling/.dsh-runtime/runtime-win32-x64
+    runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
     allowedLocalRoots:
       - D:/Dev/Projects/my-workspace
     # 已配置 runtime 内含本地语言包，因此可以安全开启。
@@ -129,7 +132,7 @@ pwsh -File ./scripts/build-runtime-win32-x64.ps1
 - id: dsh-docling
   config:
     engine: python
-    runtimeDir: ~/.dsh/plugins/dsh-docling/.dsh-runtime/runtime-win32-x64
+    runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
     allowedLocalRoots:
       - D:/Dev/Projects/my-workspace
 ```

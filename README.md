@@ -1,8 +1,8 @@
-# dsh-docling
+# dsh-docs
 
 [中文](README.zh-CN.md) | [Installation prompt](INSTALL.md)
 
-**dsh-docling** gives your DeepSeek Harness agent real document intelligence —
+**dsh-docs** gives your DeepSeek Harness agent real document intelligence —
 entirely on your own machine. Hand it a PDF, Word, Excel, or PowerPoint file
 and get back clean Markdown, plain text, or structured JSON; hand it a scanned
 page or image and a fully offline OCR pipeline reads it for you. No Docker, no
@@ -14,6 +14,9 @@ delivering complete PDF/Office/OCR coverage on Windows x64 out of the box. The
 native Xberg Node binding serves as a lightweight non-OCR fallback on any
 platform, and every file read stays confined to folders you explicitly
 authorize.
+
+The published package, plugin id, and `docling_*` tool names keep the
+`dsh-docling` spelling so existing profiles keep working.
 
 ## One-prompt install
 
@@ -27,7 +30,7 @@ Install the dsh-docling plugin into my DSH web profile, end to end. Do every
 step yourself in the terminal and verify the result.
 
 1. Clone the repository (skip this step if the directory already exists):
-   git clone https://github.com/Sqhao-O/dsh-docling.git <home>/.dsh/plugins/dsh-docling
+   git clone https://github.com/Sqhao-O/dsh-docs.git <home>/.dsh/plugins/dsh-docs
    Replace <home> with my absolute home directory and use that absolute clone
    path in every later step.
 2. Build the plugin: run `pnpm install` inside the clone. Its prepare script
@@ -78,7 +81,7 @@ Xberg-supported input against your own corpus before enabling it in production.
 
 ## Quick start with `dsh web`
 
-The snippets below assume a checkout at `~/.dsh/plugins/dsh-docling`; expand `~`
+The snippets below assume a checkout at `~/.dsh/plugins/dsh-docs`; expand `~`
 to the absolute path of your own checkout everywhere, including inside the YAML.
 
 Build the offline Python runtime first:
@@ -90,7 +93,7 @@ pwsh -File ./scripts/build-runtime-win32-x64.ps1
 Then install the local plugin into the `web` profile:
 
 ```powershell
-dsh plugin --profile web add ~/.dsh/plugins/dsh-docling
+dsh plugin --profile web add ~/.dsh/plugins/dsh-docs
 ```
 
 Add a narrow absolute allowlist to the web profile's `cordis.patch.yml`:
@@ -99,7 +102,7 @@ Add a narrow absolute allowlist to the web profile's `cordis.patch.yml`:
 - id: dsh-docling
   config:
     engine: python
-    runtimeDir: ~/.dsh/plugins/dsh-docling/.dsh-runtime/runtime-win32-x64
+    runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
     allowedLocalRoots:
       - D:/Dev/Projects/my-workspace
     maxFileBytes: 52428800
@@ -143,7 +146,7 @@ Point the plugin at the runtime:
 - id: dsh-docling
   config:
     engine: python
-    runtimeDir: ~/.dsh/plugins/dsh-docling/.dsh-runtime/runtime-win32-x64
+    runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
     allowedLocalRoots:
       - D:/Dev/Projects/my-workspace
 ```

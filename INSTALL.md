@@ -10,7 +10,7 @@ Install the dsh-docling plugin into my DSH web profile, end to end. Do every
 step yourself in the terminal and verify the result.
 
 1. Clone the repository (skip this step if the directory already exists):
-   git clone https://github.com/Sqhao-O/dsh-docling.git <home>/.dsh/plugins/dsh-docling
+   git clone https://github.com/Sqhao-O/dsh-docs.git <home>/.dsh/plugins/dsh-docs
    Replace <home> with my absolute home directory and use that absolute clone
    path in every later step.
 2. Build the plugin: run `pnpm install` inside the clone. Its prepare script
@@ -49,14 +49,14 @@ downloadable OCR backend or allow a model download; do not commit the clone's
 1. Clone and build the plugin (the prepare script compiles `lib/`):
 
    ```powershell
-   git clone https://github.com/Sqhao-O/dsh-docling.git $HOME/.dsh/plugins/dsh-docling
-   pnpm install --dir $HOME/.dsh/plugins/dsh-docling
+   git clone https://github.com/Sqhao-O/dsh-docs.git $HOME/.dsh/plugins/dsh-docs
+   pnpm install --dir $HOME/.dsh/plugins/dsh-docs
    ```
 
 2. Windows x64 only — build the offline OCR runtime:
 
    ```powershell
-   pwsh -File $HOME/.dsh/plugins/dsh-docling/scripts/build-runtime-win32-x64.ps1
+   pwsh -File $HOME/.dsh/plugins/dsh-docs/scripts/build-runtime-win32-x64.ps1
    ```
 
 3. Determine the active profile. `dsh web` always uses `web`; do not install
@@ -65,7 +65,7 @@ downloadable OCR backend or allow a model download; do not commit the clone's
 4. Install the plugin from the local checkout:
 
    ```powershell
-   dsh plugin --profile web add $HOME/.dsh/plugins/dsh-docling
+   dsh plugin --profile web add $HOME/.dsh/plugins/dsh-docs
    ```
 
 5. Surgically add or update the plugin entry in that profile's
@@ -76,7 +76,7 @@ downloadable OCR backend or allow a model download; do not commit the clone's
    - id: dsh-docling
      config:
        engine: python
-       runtimeDir: $HOME/.dsh/plugins/dsh-docling/.dsh-runtime/runtime-win32-x64
+       runtimeDir: $HOME/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
        allowedLocalRoots:
          - D:/Dev/Projects/my-workspace
        # The configured runtime contains the local language packs.
@@ -105,7 +105,7 @@ Then use:
 - id: dsh-docling
   config:
     engine: python
-    runtimeDir: $HOME/.dsh/plugins/dsh-docling/.dsh-runtime/runtime-win32-x64
+    runtimeDir: $HOME/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
     allowedLocalRoots:
       - D:/Dev/Projects/my-workspace
 ```
