@@ -18,41 +18,38 @@ OCR 解析回退。所有文件读取都被严格限制在你显式授权的目�
 
 ## 一段提示词完成安装
 
-无需提前克隆本仓库。把下面这段提示词直接粘贴到你自己项目文件夹中正在运行的
-DSH 会话（例如 `dsh web`）里，Harness 代理会一次性完成克隆、构建、注册与配置。
-前置条件：`git`、`pnpm` ≥ 10、Node `^22.19` 或 `>= 24`，Windows x64 上还需要
-PowerShell 7+。
+无需提前克隆本仓库，也不需要构建工具链。把下面这段提示词直接粘贴到你自己项目
+文件夹中正在运行的 DSH 会话（例如 `dsh web`）里，Harness 代理会一次性完成 npm
+包安装、固定哈希的离线 OCR 运行时下载与插件配置。唯一前置条件是可用的 `dsh`
+CLI（Node `^22.19` 或 `>= 24`）；所有运行时步骤都是纯 Node.js 脚本，cmd、
+PowerShell、pwsh、Git Bash 均可运行。
 
 ```text
 请把 dsh-doc 插件端到端安装到我的 DSH web profile，所有步骤由你在终端里
 完成并验证结果。
 
-1. 克隆仓库（目录已存在则跳过此步）：
-   git clone https://github.com/Sqhao-O/dsh-docs.git <home>/.dsh/plugins/dsh-docs
-   把 <home> 替换成我的主目录绝对路径，之后所有步骤都使用这个克隆目录的绝对路径。
-2. 构建插件：在克隆目录里运行 `pnpm install`（其 prepare 脚本会编译 lib/），
-   完成后确认 lib/index.js 存在。
-3. 仅 Windows x64 —— 构建离线 OCR 运行时（每个下载文件都做 SHA-256 固定校验）：
-   pwsh -File <clone>/scripts/build-runtime-win32-x64.ps1
+1. 安装已发布的插件包：
+   dsh plugin --profile web add dsh-doc
+2. 仅 Windows x64 —— 下载预构建的离线 OCR 运行时。脚本会校验固定的压缩包
+   SHA-256，并依据随包 manifest 校验解压后的每个文件：
+   node <home>/.dsh/profiles/web/node_modules/dsh-doc/scripts/fetch-runtime-win32-x64.mjs <home>/.dsh/runtimes/dshdoc-runtime-win32-x64
+   把 <home> 替换成我的主目录绝对路径，之后所有步骤都使用这个路径。
    其他平台跳过此步，并在下面改用 engine: node。
-4. 把插件注册到我的 web profile：
-   dsh plugin --profile web add <clone>
-5. 编辑 <home>/.dsh/profiles/web/cordis.patch.yml：保留已有的全部条目，新增或
-   更新下面这一条，把 <clone> 替换为克隆目录的绝对路径：
+3. 编辑 <home>/.dsh/profiles/web/cordis.patch.yml：保留已有的全部条目，新增或
+   更新下面这一条：
    - id: dsh-doc
      config:
        engine: python
-       runtimeDir: <clone>/.dsh-runtime/runtime-win32-x64
+       runtimeDir: <home>/.dsh/runtimes/dshdoc-runtime-win32-x64
        defaultOcr: true
        maxOutputChars: 32000
    会话工作区自动可读；allowedLocalRoots 只用于共享文档库等额外持久目录。
-   若跳过了第 3 步，改用 `engine: node`、`defaultOcr: false`，并省略 runtimeDir。
-6. 运行 `dsh --profile web --dump-config` 验证合成后的 dsh-doc 条目与上面
+   若跳过了第 2 步，改用 `engine: node`、`defaultOcr: false`，并省略 runtimeDir。
+4. 运行 `dsh --profile web --dump-config` 验证合成后的 dsh-doc 条目与上面
    的配置完全一致，然后报告结果，并提醒我重启 `dsh web` 后用 dshdoc_health 测试。
 
 硬性约束：绝不安装、启动或配置 Docling Serve、Docker、容器或任何远程文档转换
-服务；绝不配置可下载的 OCR 后端或允许模型下载；不要把克隆目录里的
-.dsh-runtime/ 产物提交进 Git。
+服务；绝不配置可下载的 OCR 后端或允许模型下载。
 ```
 
 代理完成并重启 `dsh web` 后，先用 `dshdoc_health` 检查引擎，再用
@@ -70,20 +67,21 @@ PowerShell 7+。
 
 ## 通过 `dsh web` 快速使用
 
-以下示例假设克隆目录为 `~/.dsh/plugins/dsh-docs`；请把所有位置（包括 YAML
-内）的 `~` 展开为你自己克隆目录的绝对路径。
+把已发布的包装进 `web` profile：
 
-先构建离线 Python 运行时：
-
-```powershell
-pwsh -File ./scripts/build-runtime-win32-x64.ps1
+```text
+dsh plugin --profile web add dsh-doc
 ```
 
-再将本地插件安装到 `web` profile：
+仅 Windows x64 —— 把预构建的离线 OCR 运行时下载到 `node_modules` 之外的稳定
+目录（避免插件升级时被删除）：
 
-```powershell
-dsh plugin --profile web add ~/.dsh/plugins/dsh-docs
+```text
+node ~/.dsh/profiles/web/node_modules/dsh-doc/scripts/fetch-runtime-win32-x64.mjs ~/.dsh/runtimes/dshdoc-runtime-win32-x64
 ```
+
+请把所有位置（包括 YAML 内）的 `~` 展开为你的主目录绝对路径。其他平台跳过
+运行时，改用 `engine: node` 和 `defaultOcr: false`。
 
 在 web profile 的 `cordis.patch.yml` 中添加插件条目：
 
@@ -91,7 +89,7 @@ dsh plugin --profile web add ~/.dsh/plugins/dsh-docs
 - id: dsh-doc
   config:
     engine: python
-    runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
+    runtimeDir: ~/.dsh/runtimes/dshdoc-runtime-win32-x64
     # 已配置 runtime 内含本地语言包，因此可以安全开启。
     defaultOcr: true
     defaultTableMode: accurate
@@ -113,17 +111,23 @@ dsh plugin --profile web add ~/.dsh/plugins/dsh-docs
 
 ## 内嵌 Python / OCR 运行时（Windows x64）
 
-构建独立、离线优先的运行时产物：
+多数用户直接从 GitHub Release 下载预构建、固定哈希的运行时：
 
-```powershell
-pwsh -File ./scripts/build-runtime-win32-x64.ps1
+```text
+node ./scripts/fetch-runtime-win32-x64.mjs
 ```
 
-该脚本在 Git 忽略的 `.dsh-runtime/runtime-win32-x64` 下生成 CPython 3.11.9、
+如需自行审计并从源码构建，则运行：
+
+```text
+node ./scripts/build-runtime-win32-x64.mjs
+```
+
+两种命令都会在 Git 忽略的 `.dsh-runtime/runtime-win32-x64` 下生成 CPython 3.11.9、
 `xberg==1.0.14` 与固定的 `eng` / `chi_sim` Tesseract 模型。每个下载均校验 SHA-256，
 并生成 manifest、NOTICE、SPDX 清单；不会改动全局 Python。
 将运行时复制到其他机器后，应先运行
-`pwsh -File ./scripts/verify-runtime-win32-x64.ps1` 校验所有 payload 哈希。
+`node ./scripts/verify-runtime-win32-x64.mjs` 校验所有 payload 哈希。
 
 将插件指向该运行时：
 
@@ -131,7 +135,7 @@ pwsh -File ./scripts/build-runtime-win32-x64.ps1
 - id: dsh-doc
   config:
     engine: python
-    runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
+    runtimeDir: <运行时目录的绝对路径>
 ```
 
 Python worker 只经 stdio 接收文件字节快照、显示名称、MIME 与选项，从不接收用户路径
@@ -200,7 +204,7 @@ HTTP(S) 输入只会被安全识别并拒绝。若要解析远程文档，请先
 
 ## 开发验证
 
-```powershell
+```text
 pnpm install
 pnpm lint
 pnpm typecheck

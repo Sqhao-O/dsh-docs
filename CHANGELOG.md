@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Replace the PowerShell-only runtime build/verify scripts with plain Node.js
+  scripts (`scripts/*.mjs`) that run identically from cmd, PowerShell, pwsh,
+  and Git Bash; drop the pwsh 7 prerequisite from the docs and CI.
+- Add `scripts/fetch-runtime-win32-x64.mjs`, which downloads the prebuilt
+  Windows x64 runtime from the pinned GitHub Release asset (archive SHA-256
+  pinned in source) and verifies every extracted file against the manifest.
+- Publish the package to the npm registry so `dsh plugin --profile web add
+  dsh-doc` installs prebuilt code without git, pnpm, or a local build.
 - BREAKING: Rename the package and plugin id to `dsh-doc`, the tools to
   `dshdoc_*`, the error types to `DshdocError`/`DshdocErrorCode` with
   `DSHDOC_*` codes, and the worker environment variables to `DSH_DOC_*`

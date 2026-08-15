@@ -51,6 +51,7 @@
     "test:integration": "vitest run test/integration",
     "test:e2e": "vitest run test/e2e",
     "runtime:build": "node scripts/build-runtime-win32-x64.mjs",
+    "runtime:fetch": "node scripts/fetch-runtime-win32-x64.mjs",
     "runtime:verify": "node scripts/verify-runtime-win32-x64.mjs",
     "pack:check": "pnpm pack --pack-destination .pack"
   },

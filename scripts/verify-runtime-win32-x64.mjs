@@ -10,14 +10,10 @@
  *
  *   node scripts/verify-runtime-win32-x64.mjs [runtime-directory]
  */
-import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { dirname, join, resolve, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
-
-function sha256File(path) {
-  return createHash('sha256').update(readFileSync(path)).digest('hex')
-}
+import { sha256File } from './lib/runtime-common.mjs'
 
 function main() {
   const scriptDir = dirname(fileURLToPath(import.meta.url))

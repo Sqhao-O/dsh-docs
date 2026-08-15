@@ -25,49 +25,44 @@ release.
 
 ## One-prompt install
 
-No local checkout is needed. Paste the following prompt into a running DSH
-session (for example `dsh web`) in your own project folder. The Harness agent
-clones, builds, registers, and configures the plugin in one go. Prerequisites:
-`git`, `pnpm` ≥ 10, and Node `^22.19` or `>= 24`. The runtime build script is
-plain Node.js, so any shell works: cmd, PowerShell, pwsh, or Git Bash.
+No local checkout or build toolchain is needed. Paste the following prompt into
+a running DSH session (for example `dsh web`) in your own project folder. The
+Harness agent installs the published npm package, downloads the pinned offline
+OCR runtime, and configures the plugin in one go. The only prerequisite is a
+working `dsh` CLI on Node `^22.19` or `>= 24`; every runtime step is plain
+Node.js, so any shell works: cmd, PowerShell, pwsh, or Git Bash.
 
 ```text
 Install the dsh-doc plugin into my DSH web profile, end to end. Do every
 step yourself in the terminal and verify the result.
 
-1. Clone the repository (skip this step if the directory already exists):
-   git clone https://github.com/Sqhao-O/dsh-docs.git <home>/.dsh/plugins/dsh-docs
-   Replace <home> with my absolute home directory and use that absolute clone
-   path in every later step.
-2. Build the plugin: run `pnpm install` inside the clone. Its prepare script
-   compiles lib/; make sure lib/index.js exists afterwards.
-3. Windows x64 only — build the offline OCR runtime (every download is
-   SHA-256 pinned):
-   node <clone>/scripts/build-runtime-win32-x64.mjs
+1. Install the published plugin package:
+   dsh plugin --profile web add dsh-doc
+2. Windows x64 only — download the prebuilt offline OCR runtime. The script
+   verifies the pinned archive SHA-256, then verifies every extracted file
+   against the bundled manifest:
+   node <home>/.dsh/profiles/web/node_modules/dsh-doc/scripts/fetch-runtime-win32-x64.mjs <home>/.dsh/runtimes/dshdoc-runtime-win32-x64
+   Replace <home> with my absolute home directory in this and every later step.
    On any other platform, skip this step and use engine: node below.
-4. Register the plugin with my web profile:
-   dsh plugin --profile web add <clone>
-5. Edit <home>/.dsh/profiles/web/cordis.patch.yml. Preserve every existing
-   entry and add or update this one, with <clone> replaced by the absolute
-   clone path:
+3. Edit <home>/.dsh/profiles/web/cordis.patch.yml. Preserve every existing
+   entry and add or update this one:
    - id: dsh-doc
      config:
        engine: python
-       runtimeDir: <clone>/.dsh-runtime/runtime-win32-x64
+       runtimeDir: <home>/.dsh/runtimes/dshdoc-runtime-win32-x64
        defaultOcr: true
        maxOutputChars: 32000
    The session workspace is readable automatically; add allowedLocalRoots only
    for extra persistent directories such as a shared document vault.
-   If you skipped step 3, use `engine: node` and `defaultOcr: false` instead
+   If you skipped step 2, use `engine: node` and `defaultOcr: false` instead
    and omit runtimeDir.
-6. Verify with `dsh --profile web --dump-config` that the composed dsh-doc
+4. Verify with `dsh --profile web --dump-config` that the composed dsh-doc
    entry carries exactly this config, then report the result and remind me to
    restart `dsh web` so I can call dshdoc_health.
 
 Hard constraints: never install, start, or configure Docling Serve, Docker,
 containers, or any remote document-conversion service; never configure a
-downloadable OCR backend or allow a model download; do not commit the clone's
-.dsh-runtime/ artifacts to Git.
+downloadable OCR backend or allow a model download.
 ```
 
 After the agent finishes and you restart `dsh web`, check the engine with
@@ -87,20 +82,22 @@ Xberg-supported input against your own corpus before enabling it in production.
 
 ## Quick start with `dsh web`
 
-The snippets below assume a checkout at `~/.dsh/plugins/dsh-docs`; expand `~`
-to the absolute path of your own checkout everywhere, including inside the YAML.
-
-Build the offline Python runtime first:
+Install the published package into the `web` profile:
 
 ```text
-node ./scripts/build-runtime-win32-x64.mjs
+dsh plugin --profile web add dsh-doc
 ```
 
-Then install the local plugin into the `web` profile:
+Windows x64 — fetch the prebuilt offline OCR runtime into a stable directory
+outside `node_modules` (so plugin upgrades never delete it):
 
-```powershell
-dsh plugin --profile web add ~/.dsh/plugins/dsh-docs
+```text
+node ~/.dsh/profiles/web/node_modules/dsh-doc/scripts/fetch-runtime-win32-x64.mjs ~/.dsh/runtimes/dshdoc-runtime-win32-x64
 ```
+
+Expand `~` to your absolute home directory everywhere, including inside the
+YAML below. On other platforms, skip the runtime and use `engine: node` with
+`defaultOcr: false`.
 
 Add the plugin entry to the web profile's `cordis.patch.yml`:
 
@@ -108,7 +105,7 @@ Add the plugin entry to the web profile's `cordis.patch.yml`:
 - id: dsh-doc
   config:
     engine: python
-    runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
+    runtimeDir: ~/.dsh/runtimes/dshdoc-runtime-win32-x64
     maxFileBytes: 52428800
     maxOutputChars: 32000
     # Safe here because the configured runtime carries the local language packs.
@@ -136,18 +133,24 @@ from which `dsh web` was started.
 
 ## Offline embedded Python runtime (Windows x64)
 
-Build the separate runtime artifact:
+Most users fetch the prebuilt, hash-pinned runtime from the GitHub Release:
+
+```text
+node ./scripts/fetch-runtime-win32-x64.mjs
+```
+
+To audit and rebuild from source instead, run:
 
 ```text
 node ./scripts/build-runtime-win32-x64.mjs
 ```
 
-This creates a gitignored `.dsh-runtime/runtime-win32-x64` directory containing
-CPython 3.11.9, `xberg==1.0.14`, and pinned `eng` / `chi_sim` Tesseract data.
-Every downloaded file is SHA-256 validated; the artifact contains a manifest,
-NOTICE, and SPDX inventory. It does not alter a global Python installation.
-Run `node ./scripts/verify-runtime-win32-x64.mjs` before pointing a
-profile at a copied runtime artifact.
+Either command creates a gitignored `.dsh-runtime/runtime-win32-x64` directory
+containing CPython 3.11.9, `xberg==1.0.14`, and pinned `eng` / `chi_sim`
+Tesseract data. Every downloaded file is SHA-256 validated; the artifact
+contains a manifest, NOTICE, and SPDX inventory. It does not alter a global
+Python installation. Run `node ./scripts/verify-runtime-win32-x64.mjs` before
+pointing a profile at a copied runtime artifact.
 
 Point the plugin at the runtime:
 
@@ -155,7 +158,7 @@ Point the plugin at the runtime:
 - id: dsh-doc
   config:
     engine: python
-    runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
+    runtimeDir: <absolute path to the runtime directory>
 ```
 
 The Python worker receives only a byte snapshot, display name, MIME type, and
@@ -240,7 +243,7 @@ fields are accepted only for migration; they do not enable a remote engine.
 
 ## Development
 
-```powershell
+```text
 pnpm install
 pnpm lint
 pnpm typecheck

@@ -1,7 +1,15 @@
 # Windows x64 offline runtime
 
-`dsh-doc` keeps the Python/OCR engine out of the small npm package. Build the
-separately versioned Windows x64 artifact with:
+`dsh-doc` keeps the Python/OCR engine out of the small npm package. Most users
+download the prebuilt, hash-pinned artifact from the GitHub Release:
+
+~~~text
+node ./scripts/fetch-runtime-win32-x64.mjs
+~~~
+
+The archive SHA-256 is pinned inside the fetch script, and every extracted file
+is verified against the bundled manifest before the runtime is usable. To audit
+and rebuild the separately versioned artifact from source instead, run:
 
 ~~~text
 node ./scripts/build-runtime-win32-x64.mjs
