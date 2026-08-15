@@ -2,13 +2,61 @@
 
 [English](README.md) | [安装提示词](INSTALL.md)
 
-`dsh-docling` 已改为 DeepSeek Harness 的本地文档解析插件：不再启动、调用或依赖
-Docling Serve、Docker、localhost HTTP 端口或远程文档转换服务。为兼容既有 profile，
-包名以及 `docling_*` 工具名仍保留。
+**dsh-docling** 让 DeepSeek Harness 代理拥有真正的本地文档理解能力——全部在你
+自己的机器上完成。把 PDF、Word、Excel、PowerPoint 交给它，即可拿回干净的
+Markdown、纯文本或结构化 JSON；把扫描件或图片交给它，完全离线的 OCR 流水线
+会直接读出其中的文字。无需 Docker、无需 HTTP 服务、无需 API Key，文档永不
+离开你的磁盘。
 
-完整的 PDF/Office/OCR 使用固定版本的内嵌 Python + Xberg Windows 运行时，并携带离线
-Tesseract 语言数据。[Xberg](https://github.com/xberg-io/xberg) Node 原生绑定保留为轻量的
-本地非 OCR 解析回退；它不会下载 OCR 模型。
+它随附固定版本、自包含的 Python + [Xberg](https://github.com/xberg-io/xberg)
+运行时，内置离线 Tesseract 语言数据（英文与简体中文），在 Windows x64 上开箱
+即得完整的 PDF/Office/OCR 能力；原生 Xberg Node 绑定则作为任意平台上轻量的非
+OCR 解析回退。所有文件读取都被严格限制在你显式授权的目录之内。
+
+## 一段提示词完成安装
+
+无需提前克隆本仓库。把下面这段提示词直接粘贴到你自己项目文件夹中正在运行的
+DSH 会话（例如 `dsh web`）里，Harness 代理会一次性完成克隆、构建、注册与配置。
+前置条件：`git`、`pnpm` ≥ 10、Node `^22.19` 或 `>= 24`，Windows x64 上还需要
+PowerShell 7+。
+
+```text
+请把 dsh-docling 插件端到端安装到我的 DSH web profile，所有步骤由你在终端里
+完成并验证结果。
+
+1. 克隆仓库（目录已存在则跳过此步）：
+   git clone https://github.com/Sqhao-O/dsh-docling.git <home>/.dsh/plugins/dsh-docling
+   把 <home> 替换成我的主目录绝对路径，之后所有步骤都使用这个克隆目录的绝对路径。
+2. 构建插件：在克隆目录里运行 `pnpm install`（其 prepare 脚本会编译 lib/），
+   完成后确认 lib/index.js 存在。
+3. 仅 Windows x64 —— 构建离线 OCR 运行时（每个下载文件都做 SHA-256 固定校验）：
+   pwsh -File <clone>/scripts/build-runtime-win32-x64.ps1
+   其他平台跳过此步，并在下面改用 engine: node。
+4. 把插件注册到我的 web profile：
+   dsh plugin --profile web add <clone>
+5. 编辑 <home>/.dsh/profiles/web/cordis.patch.yml：保留已有的全部条目，新增或
+   更新下面这一条，把 <clone> 和 <workspace> 替换为绝对路径（<workspace> 是我
+   当前的工作目录）：
+   - id: dsh-docling
+     config:
+       engine: python
+       runtimeDir: <clone>/.dsh-runtime/runtime-win32-x64
+       allowedLocalRoots:
+         - <workspace>
+       defaultOcr: true
+       maxOutputChars: 32000
+   若跳过了第 3 步，改用 `engine: node`、`defaultOcr: false`，并省略 runtimeDir。
+6. 运行 `dsh --profile web --dump-config` 验证合成后的 dsh-docling 条目与上面
+   的配置完全一致，然后报告结果，并提醒我重启 `dsh web` 后用 docling_health 测试。
+
+硬性约束：绝不安装、启动或配置 Docling Serve、Docker、容器或任何远程文档转换
+服务；绝不配置可下载的 OCR 后端或允许模型下载；不要把克隆目录里的
+.dsh-runtime/ 产物提交进 Git。
+```
+
+代理完成并重启 `dsh web` 后，先用 `docling_health` 检查引擎，再用
+`docling_extract` 解析工作区下的任意文件。[INSTALL.md](INSTALL.md) 记录了同样的
+流程以及逐步手动安装方式。
 
 ## 已覆盖的能力
 
@@ -21,6 +69,9 @@ Tesseract 语言数据。[Xberg](https://github.com/xberg-io/xberg) Node 原生�
 
 ## 通过 `dsh web` 快速使用
 
+以下示例假设克隆目录为 `~/.dsh/plugins/dsh-docling`；请把所有位置（包括 YAML
+内）的 `~` 展开为你自己克隆目录的绝对路径。
+
 先构建离线 Python 运行时：
 
 ```powershell
@@ -30,7 +81,7 @@ pwsh -File ./scripts/build-runtime-win32-x64.ps1
 再将本地插件安装到 `web` profile：
 
 ```powershell
-dsh plugin --profile web add D:/Dev/Projects/dsh-docling
+dsh plugin --profile web add ~/.dsh/plugins/dsh-docling
 ```
 
 在 web profile 的 `cordis.patch.yml` 中设置最小白名单：
@@ -39,7 +90,7 @@ dsh plugin --profile web add D:/Dev/Projects/dsh-docling
 - id: dsh-docling
   config:
     engine: python
-    runtimeDir: D:/Dev/Projects/dsh-docling/.dsh-runtime/runtime-win32-x64
+    runtimeDir: ~/.dsh/plugins/dsh-docling/.dsh-runtime/runtime-win32-x64
     allowedLocalRoots:
       - D:/Dev/Projects/my-workspace
     # 已配置 runtime 内含本地语言包，因此可以安全开启。
@@ -78,7 +129,7 @@ pwsh -File ./scripts/build-runtime-win32-x64.ps1
 - id: dsh-docling
   config:
     engine: python
-    runtimeDir: D:/Dev/Projects/dsh-docling/.dsh-runtime/runtime-win32-x64
+    runtimeDir: ~/.dsh/plugins/dsh-docling/.dsh-runtime/runtime-win32-x64
     allowedLocalRoots:
       - D:/Dev/Projects/my-workspace
 ```

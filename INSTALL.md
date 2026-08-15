@@ -1,39 +1,82 @@
 # Install dsh-docling with a DSH agent
 
-Use this prompt inside DeepSeek Harness:
+No local checkout is needed. Paste this prompt into a running DSH session (for
+example `dsh web`) in your own project folder — the agent clones, builds,
+registers, and configures the plugin in one go. Prerequisites: `git`,
+`pnpm` ≥ 10, Node `^22.19` or `>= 24`, and PowerShell 7+ on Windows x64.
 
 ```text
-Install the local dsh-docling plugin into my active DSH profile (use web only
-when that is the active profile). Do not install, start, call, or configure
-Docling Serve, Docker, containers, or a remote document service. Allow only my
-current workspace as allowedLocalRoots. For OCR, build or use the trusted
-embedded Python runtime and configure engine: python with its runtimeDir. Do
-not configure a downloadable OCR backend or allow a model download. Node is a
-non-OCR PDF/Office/text fallback unless a trusted local tessdataPath is supplied.
-Verify the enabled plugin entry and report the exact local document formats/OCR
-path that are available. Do not add generated test files or runtime artifacts to
-Git.
+Install the dsh-docling plugin into my DSH web profile, end to end. Do every
+step yourself in the terminal and verify the result.
+
+1. Clone the repository (skip this step if the directory already exists):
+   git clone https://github.com/Sqhao-O/dsh-docling.git <home>/.dsh/plugins/dsh-docling
+   Replace <home> with my absolute home directory and use that absolute clone
+   path in every later step.
+2. Build the plugin: run `pnpm install` inside the clone. Its prepare script
+   compiles lib/; make sure lib/index.js exists afterwards.
+3. Windows x64 only — build the offline OCR runtime (every download is
+   SHA-256 pinned):
+   pwsh -File <clone>/scripts/build-runtime-win32-x64.ps1
+   On any other platform, skip this step and use engine: node below.
+4. Register the plugin with my web profile:
+   dsh plugin --profile web add <clone>
+5. Edit <home>/.dsh/profiles/web/cordis.patch.yml. Preserve every existing
+   entry and add or update this one, with <clone> and <workspace> replaced by
+   absolute paths (<workspace> is my current working directory):
+   - id: dsh-docling
+     config:
+       engine: python
+       runtimeDir: <clone>/.dsh-runtime/runtime-win32-x64
+       allowedLocalRoots:
+         - <workspace>
+       defaultOcr: true
+       maxOutputChars: 32000
+   If you skipped step 3, use `engine: node` and `defaultOcr: false` instead
+   and omit runtimeDir.
+6. Verify with `dsh --profile web --dump-config` that the composed dsh-docling
+   entry carries exactly this config, then report the result and remind me to
+   restart `dsh web` so I can call docling_health.
+
+Hard constraints: never install, start, or configure Docling Serve, Docker,
+containers, or any remote document-conversion service; never configure a
+downloadable OCR backend or allow a model download; do not commit the clone's
+.dsh-runtime/ artifacts to Git.
 ```
 
 ## Manual procedure
 
-1. Determine the active profile. `dsh web` always uses `web`; do not install
-   into `default` and then expect it to appear in `dsh web`.
-
-2. Install the plugin from a local checkout or a commit-pinned Git URL:
+1. Clone and build the plugin (the prepare script compiles `lib/`):
 
    ```powershell
-   dsh plugin --profile web add D:/Dev/Projects/dsh-docling
+   git clone https://github.com/Sqhao-O/dsh-docling.git $HOME/.dsh/plugins/dsh-docling
+   pnpm install --dir $HOME/.dsh/plugins/dsh-docling
    ```
 
-3. Surgically add or update the plugin entry in that profile's
-   `cordis.patch.yml`. Preserve other entries.
+2. Windows x64 only — build the offline OCR runtime:
+
+   ```powershell
+   pwsh -File $HOME/.dsh/plugins/dsh-docling/scripts/build-runtime-win32-x64.ps1
+   ```
+
+3. Determine the active profile. `dsh web` always uses `web`; do not install
+   into `default` and then expect it to appear in `dsh web`.
+
+4. Install the plugin from the local checkout:
+
+   ```powershell
+   dsh plugin --profile web add $HOME/.dsh/plugins/dsh-docling
+   ```
+
+5. Surgically add or update the plugin entry in that profile's
+   `cordis.patch.yml`. Preserve other entries. Replace `$HOME` and the
+   workspace with absolute paths.
 
    ```yaml
    - id: dsh-docling
      config:
        engine: python
-       runtimeDir: D:/Dev/Projects/dsh-docling/.dsh-runtime/runtime-win32-x64
+       runtimeDir: $HOME/.dsh/plugins/dsh-docling/.dsh-runtime/runtime-win32-x64
        allowedLocalRoots:
          - D:/Dev/Projects/my-workspace
        # The configured runtime contains the local language packs.
@@ -41,11 +84,11 @@ Git.
        maxOutputChars: 32000
    ```
 
-4. Restart `dsh web`. A configuration dump can help inspect the generated
+6. Restart `dsh web`. A configuration dump can help inspect the generated
    profile, but DSH may rewrite its profile layer while dumping, so keep normal
    configuration under version control or make a backup first.
 
-5. Ask the Harness to run `docling_health`, then parse a file beneath the
+7. Ask the Harness to run `docling_health`, then parse a file beneath the
    configured root. `docling_extract` is the preferred tool.
 
 ## Required offline Python runtime for OCR
@@ -62,7 +105,7 @@ Then use:
 - id: dsh-docling
   config:
     engine: python
-    runtimeDir: D:/Dev/Projects/dsh-docling/.dsh-runtime/runtime-win32-x64
+    runtimeDir: $HOME/.dsh/plugins/dsh-docling/.dsh-runtime/runtime-win32-x64
     allowedLocalRoots:
       - D:/Dev/Projects/my-workspace
 ```
