@@ -11,7 +11,7 @@
   Node OCR now requires explicit local tessdata and never downloads models.
 - Disable both extraction and Tesseract-specific document-result caches.
 - Preserve local engine errors through DSH ToolRuntime and expose offline OCR
-  readiness/languages through `docling_health`.
+  readiness/languages through `dshdoc_health`.
 - Verify the opened file descriptor identity after authorization to close
   replacement races before taking a byte snapshot.
 - Add real generated PDF, OOXML, image OCR, DSH ToolRuntime, and AgentLoop

@@ -4,13 +4,13 @@ import type { Config } from '../config.js'
 import type { DocumentEngine } from '../engine/types.js'
 import { asConversionResult } from '../output/render.js'
 import { renderConversion } from '../output/render.js'
-import { DoclingError } from '../docling/errors.js'
+import { DshdocError } from '../dshdoc/errors.js'
 import { resolveLocalFile } from '../security/local-path.js'
 import { CONVERSION_OUTPUT, CONVERSION_PARAMETERS, asHarnessError, convertOptions } from './shared.js'
 
 export function createConvertFileTool(engine: DocumentEngine, config: Config) {
   return defineTool({
-    name: 'docling_convert_file',
+    name: 'dshdoc_convert_file',
     description: 'Convert an allowed local PDF, Word, PowerPoint, Excel, HTML, Markdown, CSV, image, or scanned document into structured context. Use this for PDF / Word / PowerPoint / Excel / scanned documents.',
     parameters: {
       path: { type: 'string' as const, required: true, description: 'Path to a document inside allowedLocalRoots.' },
@@ -23,7 +23,7 @@ export function createConvertFileTool(engine: DocumentEngine, config: Config) {
     async execute(args, exec) {
       try {
         if (!config.enableLocalFiles) {
-          throw new DoclingError('FILE_ACCESS_DENIED', 'Local document conversion is disabled by configuration.')
+          throw new DshdocError('FILE_ACCESS_DENIED', 'Local document conversion is disabled by configuration.')
         }
         const file = await resolveLocalFile(args.path, config.allowedLocalRoots, config.maxFileBytes, exec.agent?.session.header.cwd)
         return await engine.convertFile({ file, options: convertOptions(args, config), signal: exec.signal }) as unknown as JsonValue

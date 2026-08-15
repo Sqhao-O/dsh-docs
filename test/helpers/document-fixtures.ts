@@ -19,7 +19,7 @@ const generator = fileURLToPath(new URL('./generate-document-fixtures.py', impor
 
 /** Generate parser inputs in the OS temp directory; no binary fixture enters Git. */
 export async function generateDocumentFixtures(): Promise<GeneratedDocumentFixtures> {
-  const directory = await mkdtemp(join(tmpdir(), 'dsh-docling-fixtures-'))
+  const directory = await mkdtemp(join(tmpdir(), 'dsh-doc-fixtures-'))
   const python = process.env.PYTHON ?? 'python'
   try {
     const { stdout } = await execFile(python, [generator, '--output', directory], {

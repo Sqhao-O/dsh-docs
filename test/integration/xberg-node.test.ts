@@ -142,7 +142,7 @@ describe('local Xberg N-API engine', () => {
 
   ocrIt('does not retain document-derived OCR cache files', async () => {
     const fixtures = await generateDocumentFixtures()
-    const cacheDirectory = await mkdtemp(join(tmpdir(), 'dsh-docling-xberg-cache-'))
+    const cacheDirectory = await mkdtemp(join(tmpdir(), 'dsh-doc-xberg-cache-'))
     const previousCacheDirectory = process.env.XBERG_CACHE_DIR
     process.env.XBERG_CACHE_DIR = cacheDirectory
     const engine = new XbergNodeClient({

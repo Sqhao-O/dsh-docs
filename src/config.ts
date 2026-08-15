@@ -35,7 +35,7 @@ export interface Config {
   defaultOutputFormat: OutputFormat
   maxOutputChars: number
   debug: boolean
-  /** Legacy ignored fields accepted for a smooth upgrade from Docling-based profiles. */
+  /** Legacy ignored fields accepted for a smooth upgrade from Dshdoc-based profiles. */
   baseUrl?: string
   apiKey?: string
 }

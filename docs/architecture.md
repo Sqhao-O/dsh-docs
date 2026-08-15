@@ -5,7 +5,7 @@
 ```text
 DeepSeek Harness ToolRuntime
         |
-        +-- docling_extract / docling_convert_file
+        +-- dshdoc_extract / dshdoc_convert_file
                  |
                  +-- realpath allowlist + file descriptor snapshot
                          |

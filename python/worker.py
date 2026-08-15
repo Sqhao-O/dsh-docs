@@ -75,16 +75,16 @@ def _positive_environment_integer(name: str, default: int) -> int:
 
 
 MAX_DOCUMENT_BYTES = _positive_environment_integer(
-    "DSH_DOCLING_WORKER_MAX_INPUT_BYTES", DEFAULT_MAX_DOCUMENT_BYTES
+    "DSH_DOC_WORKER_MAX_INPUT_BYTES", DEFAULT_MAX_DOCUMENT_BYTES
 )
 # Base64 adds at most 4/3 of the payload, then JSON field names and a newline.
 MAX_WIRE_BYTES = ((MAX_DOCUMENT_BYTES + 2) // 3) * 4 + 64 * 1024
 MAX_TIMEOUT_MS = _positive_environment_integer(
-    "DSH_DOCLING_WORKER_MAX_TIMEOUT_MS", DEFAULT_MAX_TIMEOUT_MS
+    "DSH_DOC_WORKER_MAX_TIMEOUT_MS", DEFAULT_MAX_TIMEOUT_MS
 )
 MAX_OUTPUT_CHARS = max(
     MIN_OUTPUT_CHARS,
-    _positive_environment_integer("DSH_DOCLING_WORKER_MAX_OUTPUT_CHARS", DEFAULT_MAX_OUTPUT_CHARS),
+    _positive_environment_integer("DSH_DOC_WORKER_MAX_OUTPUT_CHARS", DEFAULT_MAX_OUTPUT_CHARS),
 )
 
 
@@ -193,7 +193,7 @@ def _option_string(options: Mapping[str, Any], name: str, default: str, allowed:
 
 def _bundled_languages() -> list[str]:
     """List the Tesseract packs deliberately bundled by the platform runtime."""
-    raw_path = os.environ.get("DSH_DOCLING_TESSDATA_PATH")
+    raw_path = os.environ.get("DSH_DOC_TESSDATA_PATH")
     if not raw_path:
         return []
     directory = Path(raw_path)
@@ -227,7 +227,7 @@ def _tessdata_path(languages: list[str]) -> str:
     runtime contract.  The env variable is set by the runtime launcher, never
     by a tool request, and is the only file-system path this worker consumes.
     """
-    raw_path = os.environ.get("DSH_DOCLING_TESSDATA_PATH")
+    raw_path = os.environ.get("DSH_DOC_TESSDATA_PATH")
     if not raw_path:
         raise WorkerError("ENGINE_OCR_UNAVAILABLE")
     directory = Path(raw_path)

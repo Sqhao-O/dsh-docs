@@ -34,7 +34,7 @@ describe('embedded Python worker configuration', () => {
 
   pythonIt('enables OCR without force_ocr so searchable PDF text layers survive', () => {
     // _tessdata_path requires bundled pack files; provide a disposable one.
-    const tessdata = mkdtempSync(join(tmpdir(), 'dsh-docling-tessdata-'))
+    const tessdata = mkdtempSync(join(tmpdir(), 'dsh-doc-tessdata-'))
     writeFileSync(join(tessdata, 'eng.traineddata'), 'test-pack')
     const script = [
       'import importlib.util, json, sys',
@@ -47,7 +47,7 @@ describe('embedded Python worker configuration', () => {
     try {
       const result = spawnSync(python, ['-c', script, workerPath], {
         encoding: 'utf8',
-        env: { ...process.env, DSH_DOCLING_TESSDATA_PATH: tessdata }
+        env: { ...process.env, DSH_DOC_TESSDATA_PATH: tessdata }
       })
       expect(result.status, result.stderr).toBe(0)
       expect(JSON.parse(result.stdout)).toEqual({ force_ocr: null, disable_ocr: false, ocr_enabled: true })
@@ -57,7 +57,7 @@ describe('embedded Python worker configuration', () => {
   })
 
   pythonIt('defaults OCR languages to every pack bundled in the runtime', () => {
-    const tessdata = mkdtempSync(join(tmpdir(), 'dsh-docling-tessdata-'))
+    const tessdata = mkdtempSync(join(tmpdir(), 'dsh-doc-tessdata-'))
     writeFileSync(join(tessdata, 'eng.traineddata'), 'test-pack')
     writeFileSync(join(tessdata, 'chi_sim.traineddata'), 'test-pack')
     const script = [
@@ -71,7 +71,7 @@ describe('embedded Python worker configuration', () => {
     try {
       const result = spawnSync(python, ['-c', script, workerPath], {
         encoding: 'utf8',
-        env: { ...process.env, DSH_DOCLING_TESSDATA_PATH: tessdata }
+        env: { ...process.env, DSH_DOC_TESSDATA_PATH: tessdata }
       })
       expect(result.status, result.stderr).toBe(0)
       expect(JSON.parse(result.stdout)).toEqual(['chi_sim', 'eng'])

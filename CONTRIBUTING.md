@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for helping improve `dsh-docling`.
+Thanks for helping improve `dsh-doc`.
 
 ## Development loop
 

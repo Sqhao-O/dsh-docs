@@ -32,24 +32,24 @@ describe('DSH ToolRuntime execution', () => {
         ...(cwd === undefined ? {} : { agent: { session: { header: { cwd } } } as never })
       })
 
-      const health = await run('docling_health', {})
+      const health = await run('dshdoc_health', {})
       expect(health.isError).toBe(false)
       if (!health.isError) expect(health.value).toMatchObject({ status: 'ready', engine: 'xberg-node' })
 
-      const docx = await run('docling_convert_file', { path: fixtures.file('docx'), ocr: false })
+      const docx = await run('dshdoc_convert_file', { path: fixtures.file('docx'), ocr: false })
       expect(docx.isError).toBe(false)
       if (!docx.isError) expect(docx.value).toMatchObject({ source: { kind: 'file', name: 'document.docx' } })
       expect(JSON.stringify(docx)).toContain(fixtures.sentinels.docx)
 
-      const relative = await run('docling_extract', { source: `./${fixtures.files.xlsx}`, ocr: false }, fixtures.directory)
+      const relative = await run('dshdoc_extract', { source: `./${fixtures.files.xlsx}`, ocr: false }, fixtures.directory)
       expect(relative.isError).toBe(false)
       expect(JSON.stringify(relative)).toContain(fixtures.sentinels.xlsx)
 
-      const remote = await run('docling_convert_url', { url: 'https://example.com/report.pdf' })
+      const remote = await run('dshdoc_convert_url', { url: 'https://example.com/report.pdf' })
       expect(remote.isError).toBe(true)
       if (remote.isError) expect(JSON.stringify(remote.error)).toContain('UNSUPPORTED_URL')
 
-      const unavailableOcr = await run('docling_extract', { source: fixtures.file('png'), ocr: true })
+      const unavailableOcr = await run('dshdoc_extract', { source: fixtures.file('png'), ocr: true })
       expect(unavailableOcr.isError).toBe(true)
       if (unavailableOcr.isError) expect(JSON.stringify(unavailableOcr.error)).toContain('ENGINE_OCR_UNAVAILABLE')
 

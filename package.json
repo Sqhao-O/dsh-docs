@@ -1,5 +1,5 @@
 {
-  "name": "dsh-docling",
+  "name": "dsh-doc",
   "version": "0.1.0",
   "description": "Local PDF, Office, image, and OCR document intelligence for DeepSeek Harness.",
   "license": "MIT",

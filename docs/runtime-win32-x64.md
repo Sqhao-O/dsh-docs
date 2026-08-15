@@ -1,6 +1,6 @@
 # Windows x64 offline runtime
 
-`dsh-docling` keeps the Python/OCR engine out of the small npm package. Build the
+`dsh-doc` keeps the Python/OCR engine out of the small npm package. Build the
 separately versioned Windows x64 artifact with:
 
 ~~~powershell
@@ -32,7 +32,7 @@ the completed runtime does not.
 Use run-worker.cmd in the generated artifact for manual testing. It sets:
 
 ~~~text
-DSH_DOCLING_TESSDATA_PATH=<runtime>\ocr\tessdata
+DSH_DOC_TESSDATA_PATH=<runtime>\ocr\tessdata
 XBERG_CACHE_DIR=<runtime>\cache
 HF_HUB_OFFLINE=1
 HUGGINGFACE_HUB_OFFLINE=1
@@ -48,7 +48,7 @@ Do not set a downloadable Paddle/Candle backend as the default. A higher-grade
 model requires its own platform artifact, fixed source/version/hashes, license
 notice, and an offline smoke test before it is exposed.
 
-`docling_health` reports `OCR: ready (eng, chi_sim)` only when the configured
+`dshdoc_health` reports `OCR: ready (eng, chi_sim)` only when the configured
 runtime exposes all requested local language packs. Missing packs leave parser
 health available but report OCR unavailable, and an OCR conversion fails closed
 with `ENGINE_OCR_UNAVAILABLE`.

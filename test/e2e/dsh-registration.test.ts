@@ -2,7 +2,7 @@ import { Context } from '@deepseek-ai/cordis'
 import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
 import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { describe, expect, it } from 'vitest'
-import * as DoclingPlugin from '../../src/index.js'
+import * as DshdocPlugin from '../../src/index.js'
 import type { Config } from '../../src/config.js'
 
 function rawConfig(values: Record<string, unknown>): Config {
@@ -14,14 +14,14 @@ describe('DeepSeek Harness plugin registration', () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
-    const fiber = await ctx.plugin(DoclingPlugin, rawConfig({ allowedLocalRoots: [] }))
+    const fiber = await ctx.plugin(DshdocPlugin, rawConfig({ allowedLocalRoots: [] }))
 
-    for (const toolName of ['docling_health', 'docling_convert_file', 'docling_convert_url', 'docling_extract']) {
+    for (const toolName of ['dshdoc_health', 'dshdoc_convert_file', 'dshdoc_convert_url', 'dshdoc_extract']) {
       expect(ctx.tools.get(toolName)).toBeDefined()
     }
 
     await fiber.dispose()
-    for (const toolName of ['docling_health', 'docling_convert_file', 'docling_convert_url', 'docling_extract']) {
+    for (const toolName of ['dshdoc_health', 'dshdoc_convert_file', 'dshdoc_convert_url', 'dshdoc_extract']) {
       expect(ctx.tools.get(toolName)).toBeUndefined()
     }
   })
@@ -30,6 +30,6 @@ describe('DeepSeek Harness plugin registration', () => {
     const ctx = new Context()
     await ctx.plugin(SystemPrompt)
     await ctx.plugin(ToolRuntime)
-    await expect(ctx.plugin(DoclingPlugin, rawConfig({ timeoutMs: 0 }))).rejects.toThrow()
+    await expect(ctx.plugin(DshdocPlugin, rawConfig({ timeoutMs: 0 }))).rejects.toThrow()
   })
 })

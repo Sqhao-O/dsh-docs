@@ -196,7 +196,7 @@ TINY_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAFUlEQVR4nGP8//8/AzbA
 
 
 async def main():
-    tessdata = Path(os.environ["DSH_DOCLING_TESSDATA_PATH"])
+    tessdata = Path(os.environ["DSH_DOC_TESSDATA_PATH"])
     eng = tessdata / "eng.traineddata"
     result = await xberg.extract(
         xberg.ExtractInput(
@@ -226,7 +226,7 @@ asyncio.run(main())
     Write-Utf8 -Path $smokePath -Content $smoke
 
     $names = @(
-        'DSH_DOCLING_TESSDATA_PATH',
+        'DSH_DOC_TESSDATA_PATH',
         'XBERG_CACHE_DIR',
         'HF_HUB_OFFLINE',
         'HUGGINGFACE_HUB_OFFLINE',
@@ -241,7 +241,7 @@ asyncio.run(main())
     try {
         $cacheRoot = Join-Path $RuntimeDirectory 'cache'
         New-Item -ItemType Directory -Force -Path $cacheRoot | Out-Null
-        $env:DSH_DOCLING_TESSDATA_PATH = Join-Path $RuntimeDirectory 'ocr\tessdata'
+        $env:DSH_DOC_TESSDATA_PATH = Join-Path $RuntimeDirectory 'ocr\tessdata'
         $env:XBERG_CACHE_DIR = $cacheRoot
         $env:HF_HUB_OFFLINE = '1'
         $env:HUGGINGFACE_HUB_OFFLINE = '1'
@@ -371,7 +371,7 @@ import site
 @echo off
 setlocal EnableExtensions
 set "RUNTIME_ROOT=%~dp0"
-set "DSH_DOCLING_TESSDATA_PATH=%RUNTIME_ROOT%ocr\tessdata"
+set "DSH_DOC_TESSDATA_PATH=%RUNTIME_ROOT%ocr\tessdata"
 set "XBERG_CACHE_DIR=%RUNTIME_ROOT%cache"
 set "HF_HUB_OFFLINE=1"
 set "HUGGINGFACE_HUB_OFFLINE=1"
@@ -448,11 +448,11 @@ exit /b %ERRORLEVEL%
 
     $manifest = [ordered]@{
         schemaVersion = 1
-        artifact = 'dsh-docling-runtime-win32-x64'
+        artifact = 'dshdoc-runtime-win32-x64'
         platform = 'win32-x64'
         createdUtc = $created
         offlineDefaults = [ordered]@{
-            DSH_DOCLING_TESSDATA_PATH = 'ocr/tessdata'
+            DSH_DOC_TESSDATA_PATH = 'ocr/tessdata'
             XBERG_CACHE_DIR = 'cache'
             HF_HUB_OFFLINE = '1'
             HUGGINGFACE_HUB_OFFLINE = '1'
@@ -466,7 +466,7 @@ exit /b %ERRORLEVEL%
     $spdx = [ordered]@{
         SPDXID = 'SPDXRef-DOCUMENT'
         spdxVersion = 'SPDX-2.3'
-        name = 'dsh-docling-runtime-win32-x64'
+        name = 'dshdoc-runtime-win32-x64'
         dataLicense = 'CC0-1.0'
         documentComment = 'This SPDX document inventories the runtime artifact files and top-level source components. The Xberg wheel vendor component inventory is copied separately at sbom/xberg-py.cyclonedx.json and must be reviewed with this document.'
         creationInfo = [ordered]@{

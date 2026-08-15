@@ -55,7 +55,7 @@ function config(root: string, overrides: Partial<Config> = {}): Config {
 }
 
 async function fixture(): Promise<{ root: string, file: string }> {
-  const root = await mkdtemp(join(tmpdir(), 'dsh-docling-tools-'))
+  const root = await mkdtemp(join(tmpdir(), 'dsh-doc-tools-'))
   directories.push(root)
   const file = join(root, 'report.md')
   await writeFile(file, '# report')
@@ -117,9 +117,9 @@ describe('DSH tool definitions', () => {
     const tool = createConvertFileTool(engine, config(root))
     await tool.execute({ path: file, ocr: true, ocr_languages: ['chi_sim', 'eng'] }, execution)
     expect(engine.fileInput?.options).toMatchObject({ ocr: true, ocrLanguages: ['chi_sim', 'eng'] })
-    await expect(tool.execute({ path: file, ocr: true, ocr_languages: [] }, execution)).rejects.toMatchObject({ code: 'DOCLING_BAD_REQUEST' })
-    await expect(tool.execute({ path: file, ocr: true, ocr_languages: ['../eng'] }, execution)).rejects.toMatchObject({ code: 'DOCLING_BAD_REQUEST' })
-    await expect(tool.execute({ path: file, ocr: true, ocr_languages: Array.from({ length: 17 }, () => 'eng') }, execution)).rejects.toMatchObject({ code: 'DOCLING_BAD_REQUEST' })
+    await expect(tool.execute({ path: file, ocr: true, ocr_languages: [] }, execution)).rejects.toMatchObject({ code: 'DSHDOC_BAD_REQUEST' })
+    await expect(tool.execute({ path: file, ocr: true, ocr_languages: ['../eng'] }, execution)).rejects.toMatchObject({ code: 'DSHDOC_BAD_REQUEST' })
+    await expect(tool.execute({ path: file, ocr: true, ocr_languages: Array.from({ length: 17 }, () => 'eng') }, execution)).rejects.toMatchObject({ code: 'DSHDOC_BAD_REQUEST' })
   })
 
   it('routes a forced file source through the local engine', async () => {
@@ -143,7 +143,7 @@ describe('DSH tool definitions', () => {
     const { root, file } = await fixture()
     const engine = new FakeDocumentEngine()
     const fileTool = createConvertFileTool(engine, config(root))
-    await expect(fileTool.execute({ path: file, page_range: [3, 2] }, execution)).rejects.toMatchObject({ code: 'DOCLING_BAD_REQUEST' })
+    await expect(fileTool.execute({ path: file, page_range: [3, 2] }, execution)).rejects.toMatchObject({ code: 'DSHDOC_BAD_REQUEST' })
     const disabledTool = createExtractTool(engine, config(root, { enableLocalFiles: false }))
     await expect(disabledTool.execute({ source: file }, execution)).rejects.toMatchObject({ code: 'FILE_ACCESS_DENIED' })
   })

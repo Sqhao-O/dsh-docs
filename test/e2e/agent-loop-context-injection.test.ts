@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { describe, expect, it } from 'vitest'
-import * as DoclingPlugin from '../../src/index.js'
+import * as DshdocPlugin from '../../src/index.js'
 import type { Config } from '../../src/config.js'
 import { generateDocumentFixtures } from '../helpers/document-fixtures.js'
 
@@ -47,11 +47,11 @@ function toolCallResponse(source: string): object[] {
   const argumentsJson = JSON.stringify({ source })
   return [
     { type: 'block-start', index: 0, blockType: 'tool-call' },
-    { type: 'tool-call-delta', index: 0, id: 'docling-call-1', name: 'docling_extract', argumentsDelta: argumentsJson },
+    { type: 'tool-call-delta', index: 0, id: 'dshdoc-call-1', name: 'dshdoc_extract', argumentsDelta: argumentsJson },
     {
       type: 'block-end',
       index: 0,
-      block: { type: 'tool-call', id: 'docling-call-1', name: 'docling_extract', arguments: argumentsJson }
+      block: { type: 'tool-call', id: 'dshdoc-call-1', name: 'dshdoc_extract', arguments: argumentsJson }
     },
     { type: 'usage', usage: { inputTokens: 10, outputTokens: 5 } },
     { type: 'finish', reason: { kind: 'tool-calls' } }
@@ -73,7 +73,7 @@ function waitForIdle(ctx: Pick<RuntimeContext, 'on'>, agent: unknown): Promise<v
 const localDshIt = hasLocalDshAgentLoop ? it : it.skip
 
 describe('locally installed DSH AgentLoop context injection', () => {
-  localDshIt('feeds a real docling_extract ToolResult into the next model request', async () => {
+  localDshIt('feeds a real dshdoc_extract ToolResult into the next model request', async () => {
     const [cordis, llm, session, systemPrompt, tools, agentRegistry, agentLoop] = await Promise.all([
       import(dshModule('cordis')),
       import(dshModule('dsh-llm')),
@@ -118,7 +118,7 @@ describe('locally installed DSH AgentLoop context injection', () => {
           .filter(block => block.type === 'text')
           .map(block => block.text ?? '')
         sawToolResult = toolResultTexts.some(text => text.includes(sentinel))
-        if (!sawToolResult) throw new Error('next model request did not contain the Docling ToolResult sentinel')
+        if (!sawToolResult) throw new Error('next model request did not contain the Dshdoc ToolResult sentinel')
         yield* textResponse(`Confirmed ${sentinel}`)
       }
 
@@ -135,7 +135,7 @@ describe('locally installed DSH AgentLoop context injection', () => {
       await ctx.plugin(ToolRuntime)
       await ctx.plugin(AgentRegistry)
       await ctx.plugin(AgentLoop, { agents: [] })
-      await ctx.plugin(DoclingPlugin, rawConfig({
+      await ctx.plugin(DshdocPlugin, rawConfig({
         engine: 'node',
         allowedLocalRoots: [fixtures.directory],
         defaultOcr: false,
@@ -144,7 +144,7 @@ describe('locally installed DSH AgentLoop context injection', () => {
 
       const adapter = new SentinelCheckingAdapter()
       ctx.llm.registerAdapter(['mock'], adapter)
-      const agent = ctx.agentLoop.create(SessionId('docling-context-injection'), { provider: 'mock', model: 'mock' })
+      const agent = ctx.agentLoop.create(SessionId('dshdoc-context-injection'), { provider: 'mock', model: 'mock' })
       const idle = waitForIdle(ctx, agent)
       agent.followup(createUserMessage({
         content: [{ type: 'text', text: 'Extract the document and report its unique marker.' }],
