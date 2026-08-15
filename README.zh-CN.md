@@ -165,6 +165,10 @@ HTTP(S) 输入只会被安全识别并拒绝。若要解析远程文档，请先
 `page_range` 使用从 1 开始、两端包含的页码范围，适用于 Markdown 和纯文本结果；JSON
 输出会刻意保留完整的结构化文档。
 
+转换工具还支持按请求传入 `ocr_languages` 数组（例如 `["chi_sim", "eng"]`），临时覆盖
+配置的语言集。引擎上报时，结果会标注 `OCR: applied` / `OCR: not used`；开启 OCR 不会
+再覆盖 PDF 完好的内嵌文本层。
+
 ## 核心配置
 
 | 字段 | 默认值 | 含义 |
@@ -175,7 +179,7 @@ HTTP(S) 输入只会被安全识别并拒绝。若要解析远程文档，请先
 | `pythonWorkerPath` | 随包 worker | Python worker 的绝对路径覆盖。 |
 | `tessdataPath` | runtime `ocr/tessdata` | 内置 Tesseract 语言数据目录。 |
 | `ocrBackend` | `auto` | `auto` 或 `tesseract`；两者均选择固定的本地 Tesseract 后端。 |
-| `ocrLanguages` | `[eng]` | 本地 OCR 语言包顺序。 |
+| `ocrLanguages` | 运行时内全部语言包 | 本地 OCR 语言包顺序；不配置时使用运行时捆绑的全部 `.traineddata` 包。 |
 | `defaultOcr` | `false` | 图片/扫描件的 OCR 默认值；只应在已配置本地 tessdata runtime 时开启。 |
 | `allowedLocalRoots` | `[]` | 模型可读取的绝对、非根目录白名单。 |
 | `maxFileBytes` | `52428800` | 授权输入文件的大小上限。 |

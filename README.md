@@ -187,6 +187,12 @@ DNS-rebinding risks.
 `page_range` uses inclusive, one-based page numbers for Markdown and plain-text
 results. JSON output deliberately retains the complete structured document.
 
+The conversion tools also accept an optional per-request `ocr_languages` array
+(for example `["chi_sim", "eng"]`) to override the configured language set for
+one document. Results report `OCR: applied` / `OCR: not used` when the engine
+exposes whether the OCR pipeline contributed; enabling OCR never replaces a
+healthy embedded PDF text layer.
+
 ## Configuration
 
 | Field | Default | Meaning |
@@ -197,7 +203,7 @@ results. JSON output deliberately retains the complete structured document.
 | `pythonWorkerPath` | shipped worker | Absolute Python worker override. |
 | `tessdataPath` | runtime `ocr/tessdata` | Absolute bundled Tesseract language-data directory. |
 | `ocrBackend` | `auto` | `auto` or `tesseract`; both select the pinned local Tesseract backend. |
-| `ocrLanguages` | `[eng]` | Ordered local OCR language packs. |
+| `ocrLanguages` | every bundled pack | Ordered local OCR language packs. Unset uses every `.traineddata` pack in the configured runtime. |
 | `timeoutMs` | `120000` | Per-conversion deadline. |
 | `maxFileBytes` | `52428800` | Authorized input-size cap. |
 | `allowedLocalRoots` | `[]` | Absolute non-root directories the model may read. |
