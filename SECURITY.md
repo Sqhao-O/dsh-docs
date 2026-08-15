@@ -16,11 +16,12 @@ coordinate a fix before public disclosure.
 
 ## Deployment boundary
 
-`dsh-doc` accepts only model-supplied paths below explicit local allowlist
-roots. It resolves real paths, opens a regular file, verifies the opened file
-descriptor still matches the authorized path identity, then passes a byte
-snapshot to a local engine. Paths, URLs, and network-capable source handles are
-never forwarded to Xberg or the Python worker.
+`dsh-doc` accepts only model-supplied paths below the session workspace or
+explicit local allowlist roots. It resolves real paths, opens a regular file,
+verifies the opened file descriptor still matches the authorized path
+identity, then passes a byte snapshot to a local engine. Paths, URLs, and
+network-capable source handles are never forwarded to Xberg or the Python
+worker.
 
 The plugin creates no listener and has no Docling Serve, Docker, URL-fetch, or
 remote-parser dependency. OCR only uses configured local Tesseract data;

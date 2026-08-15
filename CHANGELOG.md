@@ -6,6 +6,10 @@
   `dshdoc_*`, the error types to `DshdocError`/`DshdocErrorCode` with
   `DSHDOC_*` codes, and the worker environment variables to `DSH_DOC_*`
   (from the initial `dsh-docling` / `docling_*` / `DSH_DOCLING_*` release).
+- Authorize the session workspace (session cwd) implicitly for local reads so
+  any project folder works without profile edits; `allowedLocalRoots` now only
+  adds extra persistent roots, and `allowWorkspaceFiles: false` restores the
+  strict allowlist-only behavior.
 - Replace the Docling Serve HTTP transport with local Xberg parsing.
 - Add native Node and optional embedded-Python stdio engines.
 - Add a pinned Windows x64 runtime builder with offline Tesseract data.

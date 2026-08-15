@@ -39,7 +39,8 @@ container lifecycle, and no dependency on a remote parser service.
 
 ## Input and network boundary
 
-The supported source boundary is an allowlisted local file. The compatibility
+The supported source boundary is a local file below the session workspace or
+an allowlisted root. The compatibility
 URL tool returns a stable `UNSUPPORTED_URL` error. This is deliberate: passing
 a once-validated URL to Xberg or a Python worker would allow downstream DNS
 rebinding or redirects to bypass the plugin's authorization boundary.

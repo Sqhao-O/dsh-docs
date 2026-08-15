@@ -38,16 +38,14 @@ PowerShell 7+。
 4. 把插件注册到我的 web profile：
    dsh plugin --profile web add <clone>
 5. 编辑 <home>/.dsh/profiles/web/cordis.patch.yml：保留已有的全部条目，新增或
-   更新下面这一条，把 <clone> 和 <workspace> 替换为绝对路径（<workspace> 是我
-   当前的工作目录）：
+   更新下面这一条，把 <clone> 替换为克隆目录的绝对路径：
    - id: dsh-doc
      config:
        engine: python
        runtimeDir: <clone>/.dsh-runtime/runtime-win32-x64
-       allowedLocalRoots:
-         - <workspace>
        defaultOcr: true
        maxOutputChars: 32000
+   会话工作区自动可读；allowedLocalRoots 只用于共享文档库等额外持久目录。
    若跳过了第 3 步，改用 `engine: node`、`defaultOcr: false`，并省略 runtimeDir。
 6. 运行 `dsh --profile web --dump-config` 验证合成后的 dsh-doc 条目与上面
    的配置完全一致，然后报告结果，并提醒我重启 `dsh web` 后用 dshdoc_health 测试。
@@ -87,20 +85,21 @@ pwsh -File ./scripts/build-runtime-win32-x64.ps1
 dsh plugin --profile web add ~/.dsh/plugins/dsh-docs
 ```
 
-在 web profile 的 `cordis.patch.yml` 中设置最小白名单：
+在 web profile 的 `cordis.patch.yml` 中添加插件条目：
 
 ```yaml
 - id: dsh-doc
   config:
     engine: python
     runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
-    allowedLocalRoots:
-      - D:/Dev/Projects/my-workspace
     # 已配置 runtime 内含本地语言包，因此可以安全开启。
     defaultOcr: true
     defaultTableMode: accurate
     maxOutputChars: 32000
 ```
+
+会话工作区无需配置即可读取；`allowedLocalRoots` 只用于工作区之外的额外持久
+目录，`allowWorkspaceFiles: false` 仅用于纯白名单锁定的部署。
 
 重启 `dsh web` 后可直接说：
 
@@ -110,7 +109,7 @@ dsh plugin --profile web add ~/.dsh/plugins/dsh-docs
 读取 ./scanned-invoice.png 的文字。
 ```
 
-相对路径按 DSH 会话工作目录解析；只有 `allowedLocalRoots` 下的文件可读取。
+相对路径按 DSH 会话工作目录解析；只有会话工作目录或 `allowedLocalRoots` 下的文件可读取。
 
 ## 内嵌 Python / OCR 运行时（Windows x64）
 
@@ -133,8 +132,6 @@ pwsh -File ./scripts/build-runtime-win32-x64.ps1
   config:
     engine: python
     runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
-    allowedLocalRoots:
-      - D:/Dev/Projects/my-workspace
 ```
 
 Python worker 只经 stdio 接收文件字节快照、显示名称、MIME 与选项，从不接收用户路径
@@ -181,7 +178,8 @@ HTTP(S) 输入只会被安全识别并拒绝。若要解析远程文档，请先
 | `ocrBackend` | `auto` | `auto` 或 `tesseract`；两者均选择固定的本地 Tesseract 后端。 |
 | `ocrLanguages` | 运行时内全部语言包 | 本地 OCR 语言包顺序；不配置时使用运行时捆绑的全部 `.traineddata` 包。 |
 | `defaultOcr` | `false` | 图片/扫描件的 OCR 默认值；只应在已配置本地 tessdata runtime 时开启。 |
-| `allowedLocalRoots` | `[]` | 模型可读取的绝对、非根目录白名单。 |
+| `allowedLocalRoots` | `[]` | 会话工作区之外，模型可读取的额外绝对、非根目录。 |
+| `allowWorkspaceFiles` | `true` | 隐式授权会话工作区（session cwd）为可读根；设为 `false` 则回到纯白名单锁定。 |
 | `maxFileBytes` | `52428800` | 授权输入文件的大小上限。 |
 | `maxOutputChars` | `32000` | 返回给模型的最大字符数。 |
 
@@ -190,7 +188,8 @@ HTTP(S) 输入只会被安全识别并拒绝。若要解析远程文档，请先
 
 ## 安全边界
 
-- 路径会 realpath 后比对全部白名单根目录，阻断 `..`、符号链接逃逸、根目录、非文件与超大文件。
+- 路径会 realpath 后比对全部白名单根目录，以及（除非禁用 `allowWorkspaceFiles`）会话工作区，
+  阻断 `..`、符号链接逃逸、根目录、非文件与超大文件。
 - 授权后立即从文件描述符读取一次字节快照，防止文件随后被替换。
 - Node 与 Python 引擎都只解析 bytes；插件不创建监听端口、URL 下载器、容器或外部服务。
 - 本版本只开放 Tesseract OCR。所有请求的语言包均从配置的本地运行时读取；缺失时安全失败，

@@ -19,6 +19,7 @@ function config(overrides: Partial<Config> = {}): ResolvedConfig {
     enableLocalFiles: true,
     enableRemoteUrls: false,
     allowedLocalRoots: [],
+    allowWorkspaceFiles: true,
     allowPrivateUrls: false,
     defaultOcr: true,
     defaultTableMode: 'accurate',

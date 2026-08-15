@@ -6,14 +6,14 @@ import { asConversionResult } from '../output/render.js'
 import { renderConversion } from '../output/render.js'
 import { DshdocError } from '../dshdoc/errors.js'
 import { resolveLocalFile } from '../security/local-path.js'
-import { CONVERSION_OUTPUT, CONVERSION_PARAMETERS, asHarnessError, convertOptions } from './shared.js'
+import { CONVERSION_OUTPUT, CONVERSION_PARAMETERS, asHarnessError, convertOptions, effectiveLocalRoots } from './shared.js'
 
 export function createConvertFileTool(engine: DocumentEngine, config: Config) {
   return defineTool({
     name: 'dshdoc_convert_file',
     description: 'Convert an allowed local PDF, Word, PowerPoint, Excel, HTML, Markdown, CSV, image, or scanned document into structured context. Use this for PDF / Word / PowerPoint / Excel / scanned documents.',
     parameters: {
-      path: { type: 'string' as const, required: true, description: 'Path to a document inside allowedLocalRoots.' },
+      path: { type: 'string' as const, required: true, description: 'Path to a document inside the session workspace or allowedLocalRoots.' },
       ...CONVERSION_PARAMETERS
     },
     output: {
@@ -25,7 +25,8 @@ export function createConvertFileTool(engine: DocumentEngine, config: Config) {
         if (!config.enableLocalFiles) {
           throw new DshdocError('FILE_ACCESS_DENIED', 'Local document conversion is disabled by configuration.')
         }
-        const file = await resolveLocalFile(args.path, config.allowedLocalRoots, config.maxFileBytes, exec.agent?.session.header.cwd)
+        const cwd = exec.agent?.session.header.cwd
+        const file = await resolveLocalFile(args.path, effectiveLocalRoots(config, cwd), config.maxFileBytes, cwd)
         return await engine.convertFile({ file, options: convertOptions(args, config), signal: exec.signal }) as unknown as JsonValue
       } catch (error) {
         return asHarnessError(error)

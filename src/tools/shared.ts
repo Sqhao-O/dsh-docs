@@ -61,6 +61,19 @@ export function asHarnessError(error: unknown): never {
   throw error
 }
 
+/**
+ * Authorized roots for one tool call: the configured allowlist plus, unless
+ * disabled, the session workspace. The agent can already read its session
+ * cwd, so trusting it here does not widen the model's reach; the directory
+ * still passes the same realpath/traversal/symlink checks as any configured
+ * root. A session without a cwd falls back to the plain allowlist.
+ */
+export function effectiveLocalRoots(config: Config, workingDirectory: string | undefined): readonly string[] {
+  if (config.allowWorkspaceFiles === false || workingDirectory === undefined) return config.allowedLocalRoots
+  if (config.allowedLocalRoots.includes(workingDirectory)) return config.allowedLocalRoots
+  return [...config.allowedLocalRoots, workingDirectory]
+}
+
 export const CONVERSION_PARAMETERS = {
   output_format: {
     type: 'string' as const,

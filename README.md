@@ -47,16 +47,16 @@ step yourself in the terminal and verify the result.
 4. Register the plugin with my web profile:
    dsh plugin --profile web add <clone>
 5. Edit <home>/.dsh/profiles/web/cordis.patch.yml. Preserve every existing
-   entry and add or update this one, with <clone> and <workspace> replaced by
-   absolute paths (<workspace> is my current working directory):
+   entry and add or update this one, with <clone> replaced by the absolute
+   clone path:
    - id: dsh-doc
      config:
        engine: python
        runtimeDir: <clone>/.dsh-runtime/runtime-win32-x64
-       allowedLocalRoots:
-         - <workspace>
        defaultOcr: true
        maxOutputChars: 32000
+   The session workspace is readable automatically; add allowedLocalRoots only
+   for extra persistent directories such as a shared document vault.
    If you skipped step 3, use `engine: node` and `defaultOcr: false` instead
    and omit runtimeDir.
 6. Verify with `dsh --profile web --dump-config` that the composed dsh-doc
@@ -101,15 +101,13 @@ Then install the local plugin into the `web` profile:
 dsh plugin --profile web add ~/.dsh/plugins/dsh-docs
 ```
 
-Add a narrow absolute allowlist to the web profile's `cordis.patch.yml`:
+Add the plugin entry to the web profile's `cordis.patch.yml`:
 
 ```yaml
 - id: dsh-doc
   config:
     engine: python
     runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
-    allowedLocalRoots:
-      - D:/Dev/Projects/my-workspace
     maxFileBytes: 52428800
     maxOutputChars: 32000
     # Safe here because the configured runtime carries the local language packs.
@@ -117,6 +115,11 @@ Add a narrow absolute allowlist to the web profile's `cordis.patch.yml`:
     defaultTableMode: accurate
     defaultOutputFormat: md
 ```
+
+The session workspace is readable without further configuration. Add
+`allowedLocalRoots` only for extra persistent directories the model may read
+beyond the workspace, and set `allowWorkspaceFiles: false` only for
+allowlist-only lockdown deployments.
 
 Restart `dsh web`, then ask it to read a local document:
 
@@ -126,9 +129,9 @@ Extract the tables from ./financials.xlsx.
 Read the text from ./scanned-invoice.png.
 ```
 
-Only paths below `allowedLocalRoots` are readable. Relative paths resolve
-against the DSH session workspace, not the directory from which `dsh web` was
-started.
+Only paths below the session workspace or `allowedLocalRoots` are readable.
+Relative paths resolve against the DSH session workspace, not the directory
+from which `dsh web` was started.
 
 ## Offline embedded Python runtime (Windows x64)
 
@@ -152,8 +155,6 @@ Point the plugin at the runtime:
   config:
     engine: python
     runtimeDir: ~/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
-    allowedLocalRoots:
-      - D:/Dev/Projects/my-workspace
 ```
 
 The Python worker receives only a byte snapshot, display name, MIME type, and
@@ -207,7 +208,8 @@ healthy embedded PDF text layer.
 | `ocrLanguages` | every bundled pack | Ordered local OCR language packs. Unset uses every `.traineddata` pack in the configured runtime. |
 | `timeoutMs` | `120000` | Per-conversion deadline. |
 | `maxFileBytes` | `52428800` | Authorized input-size cap. |
-| `allowedLocalRoots` | `[]` | Absolute non-root directories the model may read. |
+| `allowedLocalRoots` | `[]` | Extra absolute non-root directories the model may read, beyond the session workspace. |
+| `allowWorkspaceFiles` | `true` | Implicitly authorize the session workspace (session cwd) as a readable root; set `false` for allowlist-only lockdown. |
 | `defaultOcr` | `false` | OCR default for images and scans; enable it only with a configured local tessdata runtime. |
 | `defaultTableMode` | `accurate` | `fast` or `accurate` PDF table behavior. |
 | `defaultOutputFormat` | `md` | `md`, `text`, or `json`. |
@@ -219,7 +221,8 @@ fields are accepted only for migration; they do not enable a remote engine.
 
 ## Security model
 
-- Paths are realpathed and checked against every configured root. Traversal,
+- Paths are realpathed and checked against every configured root and, unless
+  `allowWorkspaceFiles` is disabled, the session workspace. Traversal,
   symlink escapes, filesystem roots, non-files, and oversized inputs fail.
 - The authorized descriptor is read once into a snapshot before parsing, so a
   later path replacement cannot change the parsed bytes.

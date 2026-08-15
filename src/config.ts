@@ -28,6 +28,14 @@ export interface Config {
   enableLocalFiles: boolean
   enableRemoteUrls: boolean
   allowedLocalRoots: string[]
+  /**
+   * Implicitly authorize the session workspace (session cwd) as a readable
+   * root. The agent can already read that directory, so this does not widen
+   * the model's reach. allowedLocalRoots then only adds extra persistent
+   * roots such as shared document vaults. Set false to lock reads to the
+   * explicit allowlist.
+   */
+  allowWorkspaceFiles: boolean
   /** Explicit opt-in for private URL targets. This weakens the SSRF guard. */
   allowPrivateUrls: boolean
   defaultOcr: boolean
@@ -56,6 +64,7 @@ export const Config: Schema<Config> = Schema.object({
   enableLocalFiles: Schema.boolean().default(true),
   enableRemoteUrls: Schema.boolean().default(false),
   allowedLocalRoots: Schema.array(Schema.string().min(1)).default([]),
+  allowWorkspaceFiles: Schema.boolean().default(true),
   allowPrivateUrls: Schema.boolean().default(false),
   // OCR needs explicitly bundled tessdata. Keep generic Node-only installs
   // offline and deterministic until a managed runtime is configured.

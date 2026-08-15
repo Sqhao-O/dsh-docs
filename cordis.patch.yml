@@ -2,6 +2,7 @@
     - id: dsh-doc
       name: dsh-doc
       config:
-        # Set this to the directories whose documents the model may read.
-        # An empty list keeps local-file conversion disabled by default.
+        # Extra directories whose documents the model may read, beyond the
+        # session workspace (which is authorized implicitly unless
+        # allowWorkspaceFiles is set to false).
         allowedLocalRoots: []

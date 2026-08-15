@@ -22,16 +22,16 @@ step yourself in the terminal and verify the result.
 4. Register the plugin with my web profile:
    dsh plugin --profile web add <clone>
 5. Edit <home>/.dsh/profiles/web/cordis.patch.yml. Preserve every existing
-   entry and add or update this one, with <clone> and <workspace> replaced by
-   absolute paths (<workspace> is my current working directory):
+   entry and add or update this one, with <clone> replaced by the absolute
+   clone path:
    - id: dsh-doc
      config:
        engine: python
        runtimeDir: <clone>/.dsh-runtime/runtime-win32-x64
-       allowedLocalRoots:
-         - <workspace>
        defaultOcr: true
        maxOutputChars: 32000
+   The session workspace is readable automatically; add allowedLocalRoots only
+   for extra persistent directories such as a shared document vault.
    If you skipped step 3, use `engine: node` and `defaultOcr: false` instead
    and omit runtimeDir.
 6. Verify with `dsh --profile web --dump-config` that the composed dsh-doc
@@ -69,20 +69,21 @@ downloadable OCR backend or allow a model download; do not commit the clone's
    ```
 
 5. Surgically add or update the plugin entry in that profile's
-   `cordis.patch.yml`. Preserve other entries. Replace `$HOME` and the
-   workspace with absolute paths.
+   `cordis.patch.yml`. Preserve other entries. Replace `$HOME` with the
+   absolute home path.
 
    ```yaml
    - id: dsh-doc
      config:
        engine: python
        runtimeDir: $HOME/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
-       allowedLocalRoots:
-         - D:/Dev/Projects/my-workspace
        # The configured runtime contains the local language packs.
        defaultOcr: true
        maxOutputChars: 32000
    ```
+
+   The session workspace is readable without `allowedLocalRoots`; configure it
+   only for extra persistent directories beyond the workspace.
 
 6. Restart `dsh web`. A configuration dump can help inspect the generated
    profile, but DSH may rewrite its profile layer while dumping, so keep normal
@@ -106,8 +107,6 @@ Then use:
   config:
     engine: python
     runtimeDir: $HOME/.dsh/plugins/dsh-docs/.dsh-runtime/runtime-win32-x64
-    allowedLocalRoots:
-      - D:/Dev/Projects/my-workspace
 ```
 
 The artifact is outside Git by design and includes fixed CPython, Xberg, and

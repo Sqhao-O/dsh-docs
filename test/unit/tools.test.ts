@@ -44,6 +44,7 @@ function config(root: string, overrides: Partial<Config> = {}): Config {
     enableLocalFiles: true,
     enableRemoteUrls: false,
     allowedLocalRoots: [root],
+    allowWorkspaceFiles: true,
     allowPrivateUrls: false,
     defaultOcr: true,
     defaultTableMode: 'accurate',
@@ -63,6 +64,21 @@ async function fixture(): Promise<{ root: string, file: string }> {
 }
 
 const execution = { signal: new AbortController().signal } as unknown as ToolRunContext
+
+function executionWithCwd(cwd: string): ToolRunContext {
+  return {
+    signal: new AbortController().signal,
+    agent: { session: { header: { cwd } } }
+  } as unknown as ToolRunContext
+}
+
+async function workspaceOutside(): Promise<{ workspace: string, file: string }> {
+  const workspace = await mkdtemp(join(tmpdir(), 'dsh-doc-workspace-'))
+  directories.push(workspace)
+  const file = join(workspace, 'report.md')
+  await writeFile(file, '# report')
+  return { workspace, file }
+}
 
 afterEach(async () => {
   await Promise.all(directories.splice(0).map(directory => rm(directory, { recursive: true, force: true })))
@@ -146,5 +162,28 @@ describe('DSH tool definitions', () => {
     await expect(fileTool.execute({ path: file, page_range: [3, 2] }, execution)).rejects.toMatchObject({ code: 'DSHDOC_BAD_REQUEST' })
     const disabledTool = createExtractTool(engine, config(root, { enableLocalFiles: false }))
     await expect(disabledTool.execute({ source: file }, execution)).rejects.toMatchObject({ code: 'FILE_ACCESS_DENIED' })
+  })
+
+  it('implicitly authorizes the session workspace, even with an empty allowlist', async () => {
+    const { root } = await fixture()
+    const { workspace, file } = await workspaceOutside()
+    const engine = new FakeDocumentEngine()
+    const tool = createExtractTool(engine, config(root, { allowedLocalRoots: [] }))
+    await tool.execute({ source: file }, executionWithCwd(workspace))
+    expect(engine.fileInput?.file.name).toBe('report.md')
+  })
+
+  it('locks reads to the allowlist when allowWorkspaceFiles is false', async () => {
+    const { root } = await fixture()
+    const { workspace, file } = await workspaceOutside()
+    const tool = createExtractTool(new FakeDocumentEngine(), config(root, { allowWorkspaceFiles: false }))
+    await expect(tool.execute({ source: file }, executionWithCwd(workspace))).rejects.toMatchObject({ code: 'FILE_ACCESS_DENIED' })
+  })
+
+  it('falls back to the plain allowlist when the session has no cwd', async () => {
+    const { root } = await fixture()
+    const { file } = await workspaceOutside()
+    const tool = createExtractTool(new FakeDocumentEngine(), config(root))
+    await expect(tool.execute({ source: file }, execution)).rejects.toMatchObject({ code: 'FILE_ACCESS_DENIED' })
   })
 })
