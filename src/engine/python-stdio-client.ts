@@ -239,6 +239,7 @@ function metadataFrom(value: unknown): ConversionMetadata {
   if (metadata === undefined) throw documentEngineError('ENGINE_PROTOCOL_ERROR')
   const title = optionalString(metadata, 'title')
   const detectedFormat = optionalString(metadata, 'detected_format')
+  const ocrUsed = optionalBoolean(metadata, 'ocrUsed')
   const pages = metadata.pages
   if (pages !== undefined && !isNonnegativeSafeInteger(pages)) {
     throw documentEngineError('ENGINE_PROTOCOL_ERROR')
@@ -246,7 +247,8 @@ function metadataFrom(value: unknown): ConversionMetadata {
   return {
     ...title === undefined ? {} : { title },
     ...pages === undefined ? {} : { pages },
-    ...detectedFormat === undefined ? {} : { detectedFormat }
+    ...detectedFormat === undefined ? {} : { detectedFormat },
+    ...ocrUsed === undefined ? {} : { ocrUsed }
   }
 }
 

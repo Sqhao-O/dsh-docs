@@ -71,6 +71,8 @@ export interface ConversionMetadata {
   readonly title?: string
   readonly pages?: number
   readonly detectedFormat?: string
+  /** Whether the OCR pipeline contributed to the result, when the engine reports it. */
+  readonly ocrUsed?: boolean
 }
 
 export interface ConversionStats {

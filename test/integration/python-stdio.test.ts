@@ -144,6 +144,10 @@ describe('embedded Python Xberg stdio engine', () => {
       // OCR must not replace a healthy embedded text layer with a lossy
       // Tesseract rendering; both paths extract the same native text.
       expect(withOcr.markdown).toBe(withoutOcr.markdown)
+      // ocrUsed reports whether the OCR pipeline contributed anywhere (for
+      // example embedded images), not whether it replaced the text layer.
+      expect(withoutOcr.metadata.ocrUsed).toBe(false)
+      expect(typeof withOcr.metadata.ocrUsed).toBe('boolean')
     } finally {
       await fixtures.dispose()
     }
@@ -173,6 +177,7 @@ describe('embedded Python Xberg stdio engine', () => {
       for (const name of ['png', 'scannedPdf']) {
         const result = await engine.convertFile(await input(fixtures.file(name), true))
         expect(result.markdown).toContain(fixtures.sentinels[name])
+        expect(result.metadata.ocrUsed).toBe(true)
       }
       expect(await nestedFiles(cache)).toEqual([])
     } finally {

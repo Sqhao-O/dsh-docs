@@ -35,4 +35,10 @@ describe('model-facing conversion renderer', () => {
     expect(renderConversion(truncated)).toContain('Output: 256/1000 characters returned')
     expect(asConversionResult(truncated as never)).toBe(truncated)
   })
+
+  it('renders the OCR usage flag when the engine reports it', () => {
+    expect(renderConversion(result({ metadata: { ocrUsed: true } }))).toContain('OCR: applied')
+    expect(renderConversion(result({ metadata: { ocrUsed: false } }))).toContain('OCR: not used')
+    expect(renderConversion(result())).not.toContain('OCR:')
+  })
 })

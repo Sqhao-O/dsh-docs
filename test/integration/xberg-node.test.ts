@@ -118,6 +118,7 @@ describe('local Xberg N-API engine', () => {
       for (const name of ['png', 'scannedPdf']) {
       const result = await engine.convertFile(await input(fixtures.file(name), 'md', true))
       expect(result.markdown).toContain(fixtures.sentinels[name])
+      expect(result.metadata.ocrUsed).toBe(true)
       await expect(engine.health()).resolves.toMatchObject({ ocrAvailable: true, ocrLanguages: ['eng'] })
       }
     } finally {

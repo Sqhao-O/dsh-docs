@@ -18,6 +18,7 @@ export function renderConversion(result: ConversionResult): string {
     `Format: ${result.metadata.detectedFormat ?? result.format}`,
     'Parsed successfully',
     ...result.metadata.pages === undefined ? [] : [`Pages: ${result.metadata.pages}`],
+    ...result.metadata.ocrUsed === undefined ? [] : [`OCR: ${result.metadata.ocrUsed ? 'applied' : 'not used'}`],
     `Truncated: ${result.stats.truncated}`,
     ...result.stats.truncated
       ? [`Output: ${result.stats.returnedChars}/${result.stats.outputChars} characters returned`]

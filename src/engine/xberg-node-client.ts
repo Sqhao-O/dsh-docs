@@ -274,6 +274,7 @@ export class XbergNodeClient implements DocumentEngine {
       const metadata = {
         ...(document.metadata?.title === undefined ? {} : { title: document.metadata.title }),
         ...(document.counts?.pages === undefined ? {} : { pages: document.counts.pages }),
+        ...(document.metadata?.ocrUsed === undefined ? {} : { ocrUsed: document.metadata.ocrUsed }),
         detectedFormat: document.mimeType ?? extension(input.file.name)
       }
       const base = {

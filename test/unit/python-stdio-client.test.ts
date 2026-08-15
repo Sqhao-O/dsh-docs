@@ -138,6 +138,15 @@ describe('PythonStdioClient protocol boundary', () => {
     expect(request?.options).toMatchObject({ ocr_languages: ['chi_sim'] })
   })
 
+  it('surfaces the worker-reported ocrUsed metadata flag', async () => {
+    const applied = client((worker, request) => response(worker, request, { format: 'pdf', metadata: { ocrUsed: true }, markdown: 'ok' }))
+    await expect(applied.convertFile(input())).resolves.toMatchObject({ metadata: { ocrUsed: true } })
+
+    // A non-boolean worker value is dropped, never reflected.
+    const malformed = client((worker, request) => response(worker, request, { format: 'pdf', metadata: { ocrUsed: 'yes' }, markdown: 'ok' }))
+    await expect(malformed.convertFile(input())).resolves.toMatchObject({ metadata: {} })
+  })
+
   it('maps health, text, JSON, and bounded JSON previews from well-formed responses', async () => {
     const health = client((worker, request) => response(worker, request, {
       status: 'ready',
