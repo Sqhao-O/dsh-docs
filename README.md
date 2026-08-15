@@ -1,5 +1,9 @@
 # dsh-docs
 
+<p align="center">
+  <img src="docs/header.png" alt="dsh-docs — local document intelligence for DeepSeek Harness: PDF, DOCX, XLSX, PPTX, Markdown, HTML, CSV, OCR, and text">
+</p>
+
 [中文](README.zh-CN.md) | [Installation prompt](INSTALL.md)
 
 **dsh-docs** gives your DeepSeek Harness agent real document intelligence —
