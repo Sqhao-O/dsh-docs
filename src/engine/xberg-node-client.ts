@@ -258,7 +258,10 @@ export class XbergNodeClient implements DocumentEngine {
         ...(ocr === undefined ? {} : { ocr }),
         pdfOptions: {
           extractTables: input.options.tableMode === 'accurate',
-          readingOrder: input.options.tableMode === 'accurate'
+          // Reading-order reflow improves Markdown/JSON structure, but on
+          // multi-column layouts it interleaves fragments into scrambled
+          // plain text, so text output keeps the native stream order.
+          readingOrder: input.options.tableMode === 'accurate' && input.options.outputFormat !== 'text'
         },
         ...(pageRange === undefined ? {} : { pages: { extractPages: true } })
       }

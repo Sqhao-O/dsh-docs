@@ -323,9 +323,12 @@ def _build_config(options_value: object) -> tuple[dict[str, Any], int, str, tupl
         "extraction_timeout_secs": max(1, (timeout_ms + 999) // 1000),
         # Keep Python and Node table/reading-order semantics identical for
         # PDFs, whether or not OCR is required for the particular page.
+        # Reading-order reflow improves Markdown/JSON structure, but on
+        # multi-column layouts it interleaves fragments into scrambled
+        # plain text, so text output keeps the native stream order.
         "pdf_options": {
             "extract_tables": table_mode == "accurate",
-            "reading_order": table_mode == "accurate",
+            "reading_order": table_mode == "accurate" and output_format != "text",
         },
     }
     if page_range is not None:

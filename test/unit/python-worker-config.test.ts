@@ -17,16 +17,18 @@ describe('embedded Python worker configuration', () => {
       'spec = importlib.util.spec_from_file_location("worker", sys.argv[1])',
       'worker = importlib.util.module_from_spec(spec)',
       'spec.loader.exec_module(worker)',
-      'def options(mode):',
-      '    config, _, _, _, _ = worker._build_config({"output_format": "md", "ocr": False, "table_mode": mode})',
+      'def options(mode, fmt):',
+      '    config, _, _, _, _ = worker._build_config({"output_format": fmt, "ocr": False, "table_mode": mode})',
       '    return config["pdf_options"]',
-      'print(json.dumps({"fast": options("fast"), "accurate": options("accurate")}))'
+      'print(json.dumps({"fast": options("fast", "md"), "accurate": options("accurate", "md"), "accurate_text": options("accurate", "text")}))'
     ].join('\n')
     const result = spawnSync(python, ['-c', script, workerPath], { encoding: 'utf8' })
     expect(result.status, result.stderr).toBe(0)
     expect(JSON.parse(result.stdout)).toEqual({
       fast: { extract_tables: false, reading_order: false },
-      accurate: { extract_tables: true, reading_order: true }
+      accurate: { extract_tables: true, reading_order: true },
+      // Reading-order reflow scrambles plain text on multi-column layouts.
+      accurate_text: { extract_tables: true, reading_order: false }
     })
   })
 
