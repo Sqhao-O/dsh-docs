@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.2
+
+- Support installation on DSH 0.2.1 (from rc.3) and 0.2.2 (from rc.1)
+  while retaining the existing 0.1 peer range.
+- Resolve relative document paths against the active DSH working directory.
+  File access still requires the session workspace or a configured local root.
+
 ## 0.1.1
 
 - Fix a profile-breaking module split: declaring `@deepseek-ai/dsh-tools` as a

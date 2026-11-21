@@ -1,8 +1,12 @@
+import { isAbsolute } from 'node:path'
+import type { Context } from '@deepseek-ai/cordis'
 import { HarnessError } from '@deepseek-ai/dsh-llm'
+import type { ToolRunContext } from '@deepseek-ai/dsh-tools'
 import type { Config } from '../config.js'
 import { DshdocError, isDshdocError } from '../dshdoc/errors.js'
 import { isDocumentEngineError } from '../engine/errors.js'
 import type { ConvertOptions } from '../engine/types.js'
+import { resolveLocalFile } from '../security/local-path.js'
 
 export interface ConversionArgs {
   readonly output_format?: string
@@ -61,17 +65,25 @@ export function asHarnessError(error: unknown): never {
   throw error
 }
 
-/**
- * Authorized roots for one tool call: the configured allowlist plus, unless
- * disabled, the session workspace. The agent can already read its session
- * cwd, so trusting it here does not widen the model's reach; the directory
- * still passes the same realpath/traversal/symlink checks as any configured
- * root. A session without a cwd falls back to the plain allowlist.
- */
-export function effectiveLocalRoots(config: Config, workingDirectory: string | undefined): readonly string[] {
-  if (config.allowWorkspaceFiles === false || workingDirectory === undefined) return config.allowedLocalRoots
-  if (config.allowedLocalRoots.includes(workingDirectory)) return config.allowedLocalRoots
-  return [...config.allowedLocalRoots, workingDirectory]
+/** Optionally include the original session workspace in the configured read roots. */
+function effectiveLocalRoots(config: Config, workspace: string | undefined): readonly string[] {
+  if (config.allowWorkspaceFiles === false || workspace === undefined) return config.allowedLocalRoots
+  if (config.allowedLocalRoots.includes(workspace)) return config.allowedLocalRoots
+  return [...config.allowedLocalRoots, workspace]
+}
+
+interface WorkingDirectory {
+  ensure(agent: NonNullable<ToolRunContext['agent']>, signal: AbortSignal): Promise<string>
+}
+
+/** DSH 0.2 tracks the active directory separately from the session's workspace. */
+export async function resolveToolFile(path: string, config: Config, exec: ToolRunContext, ctx?: Context) {
+  const workspace = exec.agent?.session.header.cwd
+  const directory: WorkingDirectory | undefined = ctx?.get('workingDirectory')
+  const cwd = !isAbsolute(path) && directory && exec.agent
+    ? await directory.ensure(exec.agent, exec.signal)
+    : workspace
+  return resolveLocalFile(path, effectiveLocalRoots(config, workspace), config.maxFileBytes, cwd)
 }
 
 export const CONVERSION_PARAMETERS = {

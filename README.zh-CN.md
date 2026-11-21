@@ -107,7 +107,8 @@ node ~/.dsh/profiles/web/node_modules/dsh-doc/scripts/fetch-runtime-win32-x64.mj
 读取 ./scanned-invoice.png 的文字。
 ```
 
-相对路径按 DSH 会话工作目录解析；只有会话工作目录或 `allowedLocalRoots` 下的文件可读取。
+在 DSH 0.2 中，相对路径按会话当前工作目录解析。可读取的范围由初始工作区和
+`allowedLocalRoots` 决定，切换目录不会扩大这个范围。
 
 ## 内嵌 Python / OCR 运行时（Windows x64）
 

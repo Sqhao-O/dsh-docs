@@ -127,9 +127,8 @@ Extract the tables from ./financials.xlsx.
 Read the text from ./scanned-invoice.png.
 ```
 
-Only paths below the session workspace or `allowedLocalRoots` are readable.
-Relative paths resolve against the DSH session workspace, not the directory
-from which `dsh web` was started.
+Relative paths follow the session's current working directory in DSH 0.2.
+By default, only files under the original workspace or `allowedLocalRoots` are readable.
 
 ## Offline embedded Python runtime (Windows x64)
 

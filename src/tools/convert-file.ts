@@ -1,14 +1,13 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import type { JsonValue } from '@deepseek-ai/dsh-tools'
+import type { Context } from '@deepseek-ai/cordis'
 import type { Config } from '../config.js'
-import type { DocumentEngine } from '../engine/types.js'
+import type { DocumentEngine, JsonValue } from '../engine/types.js'
 import { asConversionResult } from '../output/render.js'
 import { renderConversion } from '../output/render.js'
 import { DshdocError } from '../dshdoc/errors.js'
-import { resolveLocalFile } from '../security/local-path.js'
-import { CONVERSION_OUTPUT, CONVERSION_PARAMETERS, asHarnessError, convertOptions, effectiveLocalRoots } from './shared.js'
+import { CONVERSION_OUTPUT, CONVERSION_PARAMETERS, asHarnessError, convertOptions, resolveToolFile } from './shared.js'
 
-export function createConvertFileTool(engine: DocumentEngine, config: Config) {
+export function createConvertFileTool(engine: DocumentEngine, config: Config, ctx?: Context) {
   return defineTool({
     name: 'dshdoc_convert_file',
     description: 'Convert an allowed local PDF, Word, PowerPoint, Excel, HTML, Markdown, CSV, image, or scanned document into structured context. Use this for PDF / Word / PowerPoint / Excel / scanned documents.',
@@ -25,8 +24,7 @@ export function createConvertFileTool(engine: DocumentEngine, config: Config) {
         if (!config.enableLocalFiles) {
           throw new DshdocError('FILE_ACCESS_DENIED', 'Local document conversion is disabled by configuration.')
         }
-        const cwd = exec.agent?.session.header.cwd
-        const file = await resolveLocalFile(args.path, effectiveLocalRoots(config, cwd), config.maxFileBytes, cwd)
+        const file = await resolveToolFile(args.path, config, exec, ctx)
         return await engine.convertFile({ file, options: convertOptions(args, config), signal: exec.signal }) as unknown as JsonValue
       } catch (error) {
         return asHarnessError(error)

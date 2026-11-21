@@ -1,39 +1,21 @@
-import { existsSync } from 'node:fs'
-import { join } from 'node:path'
-import { pathToFileURL } from 'node:url'
+import { Context } from '@deepseek-ai/cordis'
+import AgentRegistry from '@deepseek-ai/dsh-agent'
+import AgentLoop from '@deepseek-ai/dsh-agent-loop'
+import LlmRuntime, { CallId, createUserMessage, LlmAdapter } from '@deepseek-ai/dsh-llm'
+import type { GenerateOptions, StreamChunk } from '@deepseek-ai/dsh-llm'
+import SessionStore, { SessionId } from '@deepseek-ai/dsh-session'
+import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
+import ToolRuntime from '@deepseek-ai/dsh-tools'
 import { describe, expect, it } from 'vitest'
 import * as DshdocPlugin from '../../src/index.js'
 import type { Config } from '../../src/config.js'
 import { generateDocumentFixtures } from '../helpers/document-fixtures.js'
 
-const dshRuntimeRoot = process.env.DSH_RUNTIME_ROOT
-  ?? (process.env.APPDATA === undefined
-    ? undefined
-    : join(process.env.APPDATA, 'npm', 'node_modules', '@deepseek-ai', 'dsh'))
-const dshPackagesRoot = dshRuntimeRoot === undefined
-  ? undefined
-  : join(dshRuntimeRoot, 'node_modules', '@deepseek-ai')
-const hasLocalDshAgentLoop = dshPackagesRoot !== undefined
-  && existsSync(join(dshPackagesRoot, 'dsh-agent-loop', 'lib', 'index.js'))
-
-interface RuntimeContext {
-  plugin(plugin: unknown, config?: unknown): Promise<unknown>
-  llm: { registerAdapter(providers: string[], adapter: unknown): void }
-  tools: unknown
-  agentLoop: { create(id: string, options: object): { followup(message: unknown): void } }
-  on(event: 'agent/status', listener: (payload: { agent: unknown, status: string }) => void): () => void
-}
-
 function rawConfig(values: Record<string, unknown>): Config {
   return values as unknown as Config
 }
 
-function dshModule(name: string): string {
-  if (dshPackagesRoot === undefined) throw new Error('DSH runtime root is unavailable')
-  return pathToFileURL(join(dshPackagesRoot, name, 'lib', 'index.js')).href
-}
-
-function textResponse(text: string): object[] {
+function textResponse(text: string): StreamChunk[] {
   return [
     { type: 'block-start', index: 0, blockType: 'text' },
     { type: 'text-delta', index: 0, text },
@@ -43,15 +25,15 @@ function textResponse(text: string): object[] {
   ]
 }
 
-function toolCallResponse(source: string): object[] {
+function toolCallResponse(source: string): StreamChunk[] {
   const argumentsJson = JSON.stringify({ source })
   return [
     { type: 'block-start', index: 0, blockType: 'tool-call' },
-    { type: 'tool-call-delta', index: 0, id: 'dshdoc-call-1', name: 'dshdoc_extract', argumentsDelta: argumentsJson },
+    { type: 'tool-call-delta', index: 0, id: CallId('dshdoc-call-1'), name: 'dshdoc_extract', argumentsDelta: argumentsJson },
     {
       type: 'block-end',
       index: 0,
-      block: { type: 'tool-call', id: 'dshdoc-call-1', name: 'dshdoc_extract', arguments: argumentsJson }
+      block: { type: 'tool-call', id: CallId('dshdoc-call-1'), name: 'dshdoc_extract', arguments: argumentsJson }
     },
     { type: 'usage', usage: { inputTokens: 10, outputTokens: 5 } },
     { type: 'finish', reason: { kind: 'tool-calls' } }
@@ -59,7 +41,7 @@ function toolCallResponse(source: string): object[] {
 }
 
 /** Resolve when this exact agent reaches idle after a prompt wakes it. */
-function waitForIdle(ctx: Pick<RuntimeContext, 'on'>, agent: unknown): Promise<void> {
+function waitForIdle(ctx: Context, agent: unknown): Promise<void> {
   return new Promise((resolve) => {
     const dispose = ctx.on('agent/status', ({ agent: subject, status }: { agent: unknown, status: string }) => {
       if (subject === agent && status === 'idle') {
@@ -70,31 +52,8 @@ function waitForIdle(ctx: Pick<RuntimeContext, 'on'>, agent: unknown): Promise<v
   })
 }
 
-const localDshIt = hasLocalDshAgentLoop ? it : it.skip
-
-describe('locally installed DSH AgentLoop context injection', () => {
-  localDshIt('feeds a real dshdoc_extract ToolResult into the next model request', async () => {
-    const [cordis, llm, session, systemPrompt, tools, agentRegistry, agentLoop] = await Promise.all([
-      import(dshModule('cordis')),
-      import(dshModule('dsh-llm')),
-      import(dshModule('dsh-session')),
-      import(dshModule('dsh-system-prompt')),
-      import(dshModule('dsh-tools')),
-      import(dshModule('dsh-agent')),
-      import(dshModule('dsh-agent-loop'))
-    ])
-    const Context = cordis.Context as new () => RuntimeContext
-    const LlmAdapter = llm.LlmAdapter as new () => {
-      stream(options: unknown): AsyncIterable<object>
-      resolveModel(provider: string, model: string): Promise<object>
-    }
-    const createUserMessage = llm.createUserMessage as (message: object) => unknown
-    const SessionId = session.SessionId as (id: string) => string
-    const SessionStore = session.default
-    const SystemPrompt = systemPrompt.default
-    const ToolRuntime = tools.default
-    const AgentRegistry = agentRegistry.default
-    const AgentLoop = agentLoop.default
+describe('DSH 0.1 AgentLoop context injection', () => {
+  it('feeds a real dshdoc_extract ToolResult into the next model request', async () => {
     const fixtures = await generateDocumentFixtures()
     const document = fixtures.file('pdf')
     const sentinel = fixtures.sentinels.pdf ?? (() => { throw new Error('Generated PDF fixture did not declare its sentinel') })()
@@ -104,7 +63,7 @@ describe('locally installed DSH AgentLoop context injection', () => {
       readonly requests: unknown[] = []
       private call = 0
 
-      override async *stream(options: { messages: readonly { content: readonly { type: string, content?: readonly { type: string, text?: string }[] }[] }[] }): AsyncIterable<object> {
+      override async *stream(options: GenerateOptions): AsyncIterable<StreamChunk> {
         this.requests.push(options)
         const current = this.call++
         if (current === 0) {
@@ -122,14 +81,14 @@ describe('locally installed DSH AgentLoop context injection', () => {
         yield* textResponse(`Confirmed ${sentinel}`)
       }
 
-      override resolveModel(provider: string, model: string): Promise<object> {
+      override resolveModel(provider: string, model: string) {
         return Promise.resolve({ provider, id: model, name: model })
       }
     }
 
     const ctx = new Context()
     try {
-      await ctx.plugin(llm.default)
+      await ctx.plugin(LlmRuntime)
       await ctx.plugin(SessionStore)
       await ctx.plugin(SystemPrompt)
       await ctx.plugin(ToolRuntime)
@@ -155,6 +114,7 @@ describe('locally installed DSH AgentLoop context injection', () => {
       expect(adapter.requests).toHaveLength(2)
       expect(sawToolResult).toBe(true)
     } finally {
+      await ctx.fiber.dispose()
       await fixtures.dispose()
     }
   }, 120_000)

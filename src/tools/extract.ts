@@ -1,17 +1,16 @@
 import { defineTool } from '@deepseek-ai/dsh-tools'
-import type { JsonValue } from '@deepseek-ai/dsh-tools'
+import type { Context } from '@deepseek-ai/cordis'
 import type { Config } from '../config.js'
-import type { DocumentEngine } from '../engine/types.js'
+import type { DocumentEngine, JsonValue } from '../engine/types.js'
 import { asConversionResult, renderConversion } from '../output/render.js'
 import { DshdocError } from '../dshdoc/errors.js'
-import { resolveLocalFile } from '../security/local-path.js'
-import { CONVERSION_OUTPUT, CONVERSION_PARAMETERS, asHarnessError, convertOptions, effectiveLocalRoots } from './shared.js'
+import { CONVERSION_OUTPUT, CONVERSION_PARAMETERS, asHarnessError, convertOptions, resolveToolFile } from './shared.js'
 
 function isHttpSource(source: string): boolean {
   return /^https?:\/\//i.test(source)
 }
 
-export function createExtractTool(engine: DocumentEngine, config: Config) {
+export function createExtractTool(engine: DocumentEngine, config: Config, ctx?: Context) {
   return defineTool({
     name: 'dshdoc_extract',
     description: 'Preferred high-level local document tool. Extract PDF, Office, text, HTML, CSV, images, and scanned documents from an allowed local path. HTTP(S) URLs must be downloaded into an allowed local root first.',
@@ -39,8 +38,7 @@ export function createExtractTool(engine: DocumentEngine, config: Config) {
         if (!config.enableLocalFiles) {
           throw new DshdocError('FILE_ACCESS_DENIED', 'Local document conversion is disabled by configuration.')
         }
-        const cwd = exec.agent?.session.header.cwd
-        const file = await resolveLocalFile(args.source, effectiveLocalRoots(config, cwd), config.maxFileBytes, cwd)
+        const file = await resolveToolFile(args.source, config, exec, ctx)
         return await engine.convertFile({ file, options, signal: exec.signal }) as unknown as JsonValue
       } catch (error) {
         return asHarnessError(error)

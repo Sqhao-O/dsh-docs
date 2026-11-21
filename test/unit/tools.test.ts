@@ -1,7 +1,8 @@
-import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
+import { Context } from '@deepseek-ai/cordis'
 import type { JsonValue, ToolRunContext } from '@deepseek-ai/dsh-tools'
 import type { Config } from '../../src/config.js'
 import { documentEngineError } from '../../src/engine/errors.js'
@@ -178,6 +179,32 @@ describe('DSH tool definitions', () => {
     const { workspace, file } = await workspaceOutside()
     const tool = createExtractTool(new FakeDocumentEngine(), config(root, { allowWorkspaceFiles: false }))
     await expect(tool.execute({ source: file }, executionWithCwd(workspace))).rejects.toMatchObject({ code: 'FILE_ACCESS_DENIED' })
+  })
+
+  it('resolves both file tools from the active directory within the original read roots', async () => {
+    const { root } = await fixture()
+    const { workspace: outside } = await workspaceOutside()
+    const nested = join(root, 'nested')
+    await mkdir(nested)
+    await writeFile(join(nested, 'report.md'), 'nested report')
+    let cwd = nested
+    const ctx = new Context()
+    ctx.provide('workingDirectory', { ensure: async () => cwd })
+    const engine = new FakeDocumentEngine()
+    const options = config(root, { allowedLocalRoots: [] })
+    const exec = executionWithCwd(root)
+    const extract = createExtractTool(engine, options, ctx)
+    const convert = createConvertFileTool(engine, options, ctx)
+    for (const run of [
+      () => extract.execute({ source: 'report.md' }, exec),
+      () => convert.execute({ path: 'report.md' }, exec)
+    ]) {
+      cwd = nested
+      await run()
+      expect(Buffer.from(engine.fileInput!.file.bytes).toString()).toBe('nested report')
+      cwd = outside
+      await expect(run()).rejects.toMatchObject({ code: 'FILE_ACCESS_DENIED' })
+    }
   })
 
   it('falls back to the plain allowlist when the session has no cwd', async () => {

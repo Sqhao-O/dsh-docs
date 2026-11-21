@@ -24,7 +24,7 @@ export function apply(ctx: Context, config: PluginConfig): void {
     } : {})
   })
   ctx.tools.register(createHealthTool(engine))
-  ctx.tools.register(createConvertFileTool(engine, resolved))
+  ctx.tools.register(createConvertFileTool(engine, resolved, ctx))
   ctx.tools.register(createConvertUrlTool())
-  ctx.tools.register(createExtractTool(engine, resolved))
+  ctx.tools.register(createExtractTool(engine, resolved, ctx))
 }
