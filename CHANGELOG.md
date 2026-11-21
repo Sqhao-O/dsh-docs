@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3
+
+- Treat empty `page_range` and `ocr_languages` arrays as omitted in
+  `dshdoc_extract` and `dshdoc_convert_file`. An empty page range selects
+  all pages, and an empty language list uses the configured or bundled OCR
+  languages. Fixes [#9](https://github.com/Sqhao-O/dsh-docs/issues/9).
+
 ## 0.1.2
 
 - Support installation on DSH 0.2.1 (from rc.3) and 0.2.2 (from rc.1)
