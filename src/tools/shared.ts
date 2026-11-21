@@ -19,12 +19,17 @@ export interface ConversionArgs {
 const OCR_LANGUAGE_PATTERN = /^[A-Za-z0-9_+-]+$/
 const MAX_OCR_LANGUAGES = 16
 
+function omitEmptyArray<T>(values: readonly T[] | undefined): readonly T[] | undefined {
+  return Array.isArray(values) && values.length === 0 ? undefined : values
+}
+
 export function convertOptions(args: ConversionArgs, config: Config): ConvertOptions {
+  const requestedPages = omitEmptyArray(args.page_range)
   let pageRange: readonly [number, number] | undefined
-  if (args.page_range !== undefined) {
-    const firstPage = args.page_range[0]
-    const lastPage = args.page_range[1]
-    if (args.page_range.length !== 2
+  if (requestedPages !== undefined) {
+    const firstPage = requestedPages[0]
+    const lastPage = requestedPages[1]
+    if (requestedPages.length !== 2
       || firstPage === undefined
       || lastPage === undefined
       || !Number.isSafeInteger(firstPage)
@@ -43,9 +48,9 @@ export function convertOptions(args: ConversionArgs, config: Config): ConvertOpt
   if (tableMode !== 'fast' && tableMode !== 'accurate') {
     throw new DshdocError('DSHDOC_BAD_REQUEST', 'table_mode must be fast or accurate.')
   }
-  const ocrLanguages = args.ocr_languages
+  const ocrLanguages = omitEmptyArray(args.ocr_languages)
   if (ocrLanguages !== undefined
-    && (ocrLanguages.length === 0
+    && (!Array.isArray(ocrLanguages)
       || ocrLanguages.length > MAX_OCR_LANGUAGES
       || ocrLanguages.some(language => !OCR_LANGUAGE_PATTERN.test(language)))) {
     throw new DshdocError('DSHDOC_BAD_REQUEST', 'ocr_languages must name 1-16 bundled local language packs, for example ["eng", "chi_sim"].')
@@ -101,12 +106,12 @@ export const CONVERSION_PARAMETERS = {
   page_range: {
     type: 'array' as const,
     items: { type: 'integer' as const },
-    description: 'Optional inclusive [start, end] page range; page numbering starts at 1. Applies to md and text output; json retains the complete structured document.'
+    description: 'Inclusive [start, end] page range starting at 1 for md and text output. Omit or pass [] for all pages. JSON always includes the complete structured document.'
   },
   ocr_languages: {
     type: 'array' as const,
     items: { type: 'string' as const },
-    description: 'Optional ordered OCR language packs bundled with the runtime, for example ["chi_sim", "eng"]. Defaults to the configured or bundled language set.'
+    description: 'Ordered OCR language packs bundled with the runtime, for example ["chi_sim", "eng"]. Omit or pass [] to use the configured or bundled language set.'
   }
 } as const
 

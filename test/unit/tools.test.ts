@@ -120,7 +120,7 @@ describe('DSH tool definitions', () => {
     const { root, file } = await fixture()
     const engine = new FakeDocumentEngine()
     const tool = createConvertFileTool(engine, config(root))
-    const value = await tool.execute({ path: file, ocr: false, table_mode: 'fast', page_range: [2, 3] }, execution)
+    const value = await tool.execute({ path: file, ocr: false, table_mode: 'fast', page_range: [2, 3], ocr_languages: [] }, execution)
     expect(engine.fileInput).toMatchObject({
       file: { name: 'report.md', bytes: expect.any(Uint8Array) },
       options: { outputFormat: 'md', ocr: false, tableMode: 'fast', pageRange: [2, 3] }
@@ -132,11 +132,24 @@ describe('DSH tool definitions', () => {
     const { root, file } = await fixture()
     const engine = new FakeDocumentEngine()
     const tool = createConvertFileTool(engine, config(root))
-    await tool.execute({ path: file, ocr: true, ocr_languages: ['chi_sim', 'eng'] }, execution)
+    await tool.execute({ path: file, ocr: true, page_range: [], ocr_languages: ['chi_sim', 'eng'] }, execution)
     expect(engine.fileInput?.options).toMatchObject({ ocr: true, ocrLanguages: ['chi_sim', 'eng'] })
-    await expect(tool.execute({ path: file, ocr: true, ocr_languages: [] }, execution)).rejects.toMatchObject({ code: 'DSHDOC_BAD_REQUEST' })
     await expect(tool.execute({ path: file, ocr: true, ocr_languages: ['../eng'] }, execution)).rejects.toMatchObject({ code: 'DSHDOC_BAD_REQUEST' })
     await expect(tool.execute({ path: file, ocr: true, ocr_languages: Array.from({ length: 17 }, () => 'eng') }, execution)).rejects.toMatchObject({ code: 'DSHDOC_BAD_REQUEST' })
+  })
+
+  it.each([
+    { page_range: [] },
+    { ocr_languages: [] },
+    { page_range: [], ocr_languages: [] }
+  ])('treats empty conversion options %j as omitted', async options => {
+    const { root, file } = await fixture()
+    const engine = new FakeDocumentEngine()
+    const tool = createConvertFileTool(engine, config(root))
+    await tool.execute({ path: file }, execution)
+    const defaults = engine.fileInput?.options
+    await tool.execute({ path: file, ...options }, execution)
+    expect(engine.fileInput?.options).toStrictEqual(defaults)
   })
 
   it('routes a forced file source through the local engine', async () => {
@@ -160,7 +173,9 @@ describe('DSH tool definitions', () => {
     const { root, file } = await fixture()
     const engine = new FakeDocumentEngine()
     const fileTool = createConvertFileTool(engine, config(root))
-    await expect(fileTool.execute({ path: file, page_range: [3, 2] }, execution)).rejects.toMatchObject({ code: 'DSHDOC_BAD_REQUEST' })
+    for (const page_range of [[1], [3, 2], [0, 1]]) {
+      await expect(fileTool.execute({ path: file, page_range }, execution)).rejects.toMatchObject({ code: 'DSHDOC_BAD_REQUEST' })
+    }
     const disabledTool = createExtractTool(engine, config(root, { enableLocalFiles: false }))
     await expect(disabledTool.execute({ source: file }, execution)).rejects.toMatchObject({ code: 'FILE_ACCESS_DENIED' })
   })

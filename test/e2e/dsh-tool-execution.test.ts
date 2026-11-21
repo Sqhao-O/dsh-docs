@@ -36,10 +36,15 @@ describe('DSH ToolRuntime execution', () => {
       expect(health.isError).toBe(false)
       if (!health.isError) expect(health.value).toMatchObject({ status: 'ready', engine: 'xberg-node' })
 
-      const docx = await run('dshdoc_convert_file', { path: fixtures.file('docx'), ocr: false })
+      const emptyOptions = { ocr: false, page_range: [], ocr_languages: [] }
+      const docx = await run('dshdoc_convert_file', { path: fixtures.file('docx'), ...emptyOptions })
       expect(docx.isError).toBe(false)
       if (!docx.isError) expect(docx.value).toMatchObject({ source: { kind: 'file', name: 'document.docx' } })
       expect(JSON.stringify(docx)).toContain(fixtures.sentinels.docx)
+
+      const pdf = await run('dshdoc_extract', { source: fixtures.file('pdf'), source_type: 'file', ...emptyOptions })
+      expect(pdf.isError).toBe(false)
+      expect(JSON.stringify(pdf)).toContain(fixtures.sentinels.pdf)
 
       const relative = await run('dshdoc_extract', { source: `./${fixtures.files.xlsx}`, ocr: false }, fixtures.directory)
       expect(relative.isError).toBe(false)
